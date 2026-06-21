@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agents — Full Implementation Spec (Lean v2)</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090B0F;--surface:#0F1119;--surface2:#13161F;--border:#1A1E2E;
+  --orch:#4F7EFF;--cyan:#38BDF8;--teal:#34D399;--green:#2DD4A7;
+  --yellow:#FBBF24;--orange:#FF7B54;--purple:#A78BFA;--pink:#F472B6;
+  --red:#F87171;--dim:#4E5568;--dim2:#6B7280;--text:#C8CDD8;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:36px 20px 80px;display:flex;flex-direction:column;align-items:center;}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--orch);text-transform:uppercase;text-align:center;margin-bottom:8px;}
+h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:#fff;text-align:center;}
+.sub{margin-top:6px;color:var(--dim2);font-size:12px;text-align:center;margin-bottom:24px;}
+
+/* TABS */
+.tabs{display:flex;gap:0;width:100%;max-width:1020px;border-bottom:2px solid var(--border);flex-wrap:wrap;}
+.tab-btn{font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;text-transform:uppercase;padding:11px 20px;border:none;background:none;cursor:pointer;color:var(--dim2);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:7px;white-space:nowrap;}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{font-weight:600;}
+.tab-btn.t-srs.active{border-color:var(--pink);color:var(--pink);}
+.tab-btn.t-impl.active{border-color:var(--cyan);color:var(--cyan);}
+.tab-btn.t-airev.active{border-color:var(--yellow);color:var(--yellow);}
+.tab-btn.t-devops.active{border-color:var(--orange);color:var(--orange);}
+.tab-btn.t-ci.active{border-color:var(--yellow);color:var(--yellow);}
+.tab-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.tab-btn.t-srs .tab-dot{background:var(--pink);}
+.tab-btn.t-impl .tab-dot{background:var(--cyan);}
+.tab-btn.t-airev .tab-dot,.tab-btn.t-ci .tab-dot{background:var(--yellow);}
+.tab-btn.t-devops .tab-dot{background:var(--orange);}
+
+.panel{display:none;width:100%;max-width:1020px;padding-top:18px;}
+.panel.active{display:flex;flex-direction:column;gap:18px;}
+
+/* AGENT HERO */
+.agent-hero{border-radius:14px;padding:20px 26px;border:1.5px solid;}
+.ah-srs{border-color:rgba(244,114,182,.4);background:linear-gradient(135deg,rgba(244,114,182,.06),rgba(244,114,182,.02));}
+.ah-impl{border-color:rgba(56,189,248,.4);background:linear-gradient(135deg,rgba(56,189,248,.06),rgba(56,189,248,.02));}
+.ah-airev{border-color:rgba(251,191,36,.4);background:linear-gradient(135deg,rgba(251,191,36,.05),rgba(251,191,36,.02));}
+.ah-devops{border-color:rgba(255,123,84,.4);background:linear-gradient(135deg,rgba(255,123,84,.05),rgba(255,123,84,.02));}
+.ah-badge{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;}
+.ah-srs .ah-badge{color:var(--pink);}
+.ah-impl .ah-badge{color:var(--cyan);}
+.ah-airev .ah-badge{color:var(--yellow);}
+.ah-devops .ah-badge{color:var(--orange);}
+.ah-name{font-size:18px;font-weight:600;color:#fff;margin-bottom:4px;}
+.ah-role{font-size:12px;color:var(--dim2);margin-bottom:14px;}
+.ah-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.ah-stat{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px 13px;}
+.ah-stat-label{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim2);margin-bottom:3px;}
+.ah-stat-val{font-size:12px;font-weight:600;color:var(--text);}
+
+/* SECTION */
+.spec-section{border-radius:12px;border:1.5px solid var(--border);overflow:hidden;}
+.ss-header{padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:10px;}
+.ss-icon{font-size:16px;}
+.ss-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim2);}
+.ss-title{font-size:13px;font-weight:600;color:#fff;margin-left:2px;}
+.ss-body{padding:16px 18px;}
+
+/* CODE */
+.code-wrap{border-radius:8px;overflow:hidden;margin:6px 0;}
+.code-header{background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 13px;display:flex;align-items:center;justify-content:space-between;}
+.code-filename{font-family:var(--mono);font-size:10px;color:var(--cyan);}
+.code-lang{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;}
+pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:10.5px;line-height:1.75;color:#C8CDD8;margin:0;}
+.k{color:#A78BFA;}.s{color:#2DD4A7;}.c{color:#2D3748;font-style:italic;}.n{color:#38BDF8;}.v{color:#FBBF24;}.fn{color:#F472B6;}
+
+/* TOOLS + SKILLS */
+.ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ts-col-label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:8px;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;}
+.tc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px solid;}
+.sc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px dashed;}
+.panel-srs .tc{background:rgba(244,114,182,.07);color:var(--pink);border-color:rgba(244,114,182,.25);}
+.panel-srs .sc{color:rgba(244,114,182,.85);border-color:rgba(244,114,182,.3);}
+.panel-impl .tc{background:rgba(56,189,248,.07);color:var(--cyan);border-color:rgba(56,189,248,.25);}
+.panel-impl .sc{color:rgba(56,189,248,.85);border-color:rgba(56,189,248,.3);}
+.panel-airev .tc{background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.25);}
+.panel-airev .sc{color:rgba(251,191,36,.85);border-color:rgba(251,191,36,.3);}
+.panel-devops .tc{background:rgba(255,123,84,.07);color:var(--orange);border-color:rgba(255,123,84,.25);}
+.panel-devops .sc{color:rgba(255,123,84,.85);border-color:rgba(255,123,84,.3);}
+
+/* HOOK TABLE */
+.hook-table{width:100%;border-collapse:collapse;font-size:11px;}
+.hook-table th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);padding:8px 11px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface2);}
+.hook-table td{padding:9px 11px;border-bottom:1px solid rgba(26,30,46,.6);vertical-align:top;font-size:10.5px;color:var(--dim2);line-height:1.5;}
+.hook-table tr:last-child td{border-bottom:none;}
+.event-badge{font-family:var(--mono);font-size:8.5px;padding:2px 7px;border-radius:3px;white-space:nowrap;display:inline-block;}
+.e-pre{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.e-stop{background:rgba(45,212,167,.1);color:var(--green);border:1px solid rgba(45,212,167,.2);}
+.e-session{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
+.exit-code{font-family:var(--mono);font-size:8.5px;padding:2px 6px;border-radius:3px;display:inline-block;white-space:nowrap;margin:1px 0;}
+.ec-0{background:rgba(45,212,167,.08);color:var(--green);border:1px solid rgba(45,212,167,.2);}
+.ec-2{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+
+/* INNER LOOP */
+.inner-loop-note{border-radius:8px;padding:10px 14px;border:1.5px dashed rgba(248,113,113,.35);background:rgba(248,113,113,.03);font-size:10.5px;color:var(--dim2);line-height:1.55;}
+.inner-loop-note strong{color:var(--red);}
+
+/* NOTES */
+.note{border-radius:7px;padding:9px 13px;font-size:10.5px;line-height:1.5;margin:8px 0;}
+.note-warn{background:rgba(255,123,84,.05);border:1px solid rgba(255,123,84,.2);color:var(--orange);}
+.note-info{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);color:var(--cyan);}
+.note-green{background:rgba(45,212,167,.05);border:1px solid rgba(45,212,167,.15);color:var(--green);}
+.note-teal{background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.15);color:var(--teal);}
+.note-pink{background:rgba(244,114,182,.05);border:1px solid rgba(244,114,182,.18);color:var(--pink);}
+
+/* CI */
+.ci-row{margin:10px 0;padding:11px 14px;border-radius:8px;border:1px solid rgba(251,191,36,.28);background:rgba(251,191,36,.03);}
+.ci-badge{font-family:var(--mono);font-size:8.5px;color:var(--yellow);text-transform:uppercase;letter-spacing:.08em;margin-bottom:8px;}
+.ci-chips{display:flex;gap:7px;flex-wrap:wrap;}
+.ci-chip{font-family:var(--mono);font-size:9px;padding:3px 10px;border-radius:4px;background:rgba(251,191,36,.07);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+
+/* FF STEPS */
+.ff-steps{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:10px;}
+.ff-step{background:rgba(244,114,182,.04);border:1px solid rgba(244,114,182,.2);border-radius:7px;padding:9px 11px;}
+.ff-num{font-family:var(--mono);font-size:8px;color:var(--pink);text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px;}
+.ff-text{font-size:10.5px;color:var(--dim2);line-height:1.4;}
+
+.label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:7px;margin-top:13px;display:block;}
+.label:first-child{margin-top:0;}
+.sp{display:block;}
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Agents · Full Implementation Spec · Lean v2</div>
+<h1>The 4 Agents — Skills, Hooks, Tools &amp; Output</h1>
+<p class="sub">SRS · Implementation · AI Review · DevOps — plus deterministic CI that runs as hooks, not an agent</p>
+
+<div class="tabs">
+  <button class="tab-btn t-srs active" onclick="switchTab('srs')"><div class="tab-dot"></div>📝 SRS · Phase 0</button>
+  <button class="tab-btn t-impl" onclick="switchTab('impl')"><div class="tab-dot"></div>💻 Implementation · Stage 1</button>
+  <button class="tab-btn t-airev" onclick="switchTab('airev')"><div class="tab-dot"></div>🔍 AI Review · Stage 2</button>
+  <button class="tab-btn t-ci" onclick="switchTab('ci')"><div class="tab-dot"></div>⚙ CI as Hooks</button>
+  <button class="tab-btn t-devops" onclick="switchTab('devops')"><div class="tab-dot"></div>🚀 DevOps · Stage 3</button>
+</div>
+
+<!-- ═══════ SRS AGENT ═══════ -->
+<div class="panel panel-srs active" id="panel-srs">
+  <div class="agent-hero ah-srs">
+    <div class="ah-badge">Phase 0 · SRS Agent · single context</div>
+    <div class="ah-name">📝 SRS Agent</div>
+    <div class="ah-role">Translates the feature brief into a complete, locked SRS — scope, user stories, acceptance criteria, risk register, UX flows, component map, accessibility — written in one pass, then self-critiqued.</div>
+    <div class="ah-grid">
+      <div class="ah-stat"><div class="ah-stat-label">Runs as</div><div class="ah-stat-val">Single context — no parallel</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Writes</div><div class="ah-stat-val">docs/srs/feat-*.md (git)</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Signals</div><div class="ah-stat-val">SRS_READY → hub</div></div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/srs/SKILL.md</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.claude/agents/srs/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># SRS Agent — Skill File</span>
+
+<span class="c">## Identity</span>
+You author the entire SRS in one context: scope, requirements, UX, criteria.
+You do NOT write code or tests. You produce a locked, testable spec.
+
+<span class="c">## Context you receive (retrieved by Orchestrator)</span>
+- Feature brief · relevant LTM slice only · GitHub Issues/PR history
+- Storybook inventory (read *.stories.ts — never run Storybook)
+
+<span class="c">## Output — write SRS.md directly (git is the version store)</span>
+You write the SRS to a file. No JSON write-through proposal.
+Sections, each tagged confidence HIGH / MED / LOW:
+1. featureOverview + goals + nonGoals
+2. userStories        — id, role, want, soThat
+3. acceptanceCriteria — Given/When/Then, machine-testable
+4. riskRegister       — min 2; likelihood, impact, mitigation
+5. successMetrics     — baseline → target → measure-by
+6. scopeBoundary      — binary in / out, no "maybe"
+7. uxFlows            — state machine: states, transitions, triggers
+8. componentMap       — per screen: reuse / extend / new + story
+9. accessibilityReqs  — concrete WCAG 2.1 AA per element
+10. riskTags          — risk:high for auth / payments / migrations
+11. openQuestions     — only undecidable PRODUCT calls
+
+<span class="c">## Mandatory self-critique pass (replaces the sync round)</span>
+After the first draft, re-read the WHOLE SRS adversarially:
+every AC machine-testable? every screen maps to a story? any
+contradiction / orphan requirement? Fix in place. Then emit SRS_READY.
+
+<span class="c">## Hard rules</span>
+- LOW on a product decision → openQuestions[]; LOW on a technical detail → decide, flag, move on
+- Final line: {"signal":"SRS_READY","srsPath":"docs/srs/feat-042.md","riskTags":["risk:high"]}</pre>
+      </div>
+      <div class="note note-pink" style="margin-top:10px;">
+        <strong>Self-critique = the pass that replaces the sync round.</strong> Because one agent wrote every section, the critique can hold scope, UX, and criteria in mind at once — something three parallel agents structurally cannot. Integration conflicts are gone by construction; only undecidable product trade-offs survive to the human gate.
+      </div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools &amp; Skills</div></div>
+    <div class="ss-body">
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools</div>
+          <div class="chips">
+            <span class="tc">Read (LTM slice — injected)</span>
+            <span class="tc">Write (docs/srs/feat-*.md)</span>
+            <span class="tc">Read (src/**/*.stories.ts)</span>
+            <span class="tc">github:list_issues / get_issue</span>
+            <span class="tc">github:list_pull_requests</span>
+            <span class="tc">Bash (git log --oneline -10)</span>
+          </div>
+        </div>
+        <div>
+          <div class="ts-col-label">📚 Skills</div>
+          <div class="chips">
+            <span class="sc">given-when-then</span>
+            <span class="sc">user-story + scope-boundary</span>
+            <span class="sc">risk-matrix + measurable-kpi</span>
+            <span class="sc">ux-flow + reuse/extend/create</span>
+            <span class="sc">wcag-accessibility</span>
+            <span class="sc">adversarial-self-critique</span>
+            <span class="sc">ltm-pattern-application</span>
+          </div>
+        </div>
+      </div>
+      <div class="note note-warn" style="margin-top:12px;"><strong>Write scope:</strong> exactly one artifact — <code>docs/srs/feat-{id}.md</code>, committed by git. Never touches <code>src/</code>, never creates Issues (post-lock), never runs the build.</div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Lean hook set</div></div>
+    <div class="ss-body">
+      <div class="note note-info">Inherits the 3 shared hooks (SessionStart LTM retrieval, PreToolUse guard, Stop validator). No per-call logger — audit trail = git + transcript.</div>
+      <div class="sp" style="height:10px;"></div>
+      <table class="hook-table">
+        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><span class="event-badge e-session">SessionStart</span></td><td>Inject the relevant LTM slice (not the whole file)</td><td><span class="exit-code ec-0">0</span></td><td>Keeps context small as LTM grows.</td></tr>
+          <tr><td><span class="event-badge e-pre">PreToolUse</span></td><td>Write outside <code>docs/srs/**</code> — blocked</td><td><span class="exit-code ec-2">2 block</span></td><td>SRS Agent writes only the SRS file.</td></tr>
+          <tr><td><span class="event-badge e-stop">Stop</span></td><td>Validates SRS_READY + every screen maps to a story + riskRegister ≥ 2</td><td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td><td>Cannot stop on an incomplete spec.</td></tr>
+        </tbody>
+      </table>
+      <div class="note note-green" style="margin-top:10px;"><strong>Gates after this agent:</strong> Gate 1 Auto QA (schema + traceability lint over SRS.md) → Gate 2 Human approval → SRS locked, committed, key decisions promoted to LTM.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ IMPLEMENTATION ═══════ -->
+<div class="panel panel-impl" id="panel-impl">
+  <div class="agent-hero ah-impl">
+    <div class="ah-badge">Phase 1 · Stage 1 · Implementation Agent · TDD</div>
+    <div class="ah-name">💻 Implementation Agent</div>
+    <div class="ah-role">Writes failing tests from acceptance criteria, then Angular code to green — components, services, routing, API, Storybook stories, and the matching Jest + Playwright tests, all in the same context.</div>
+    <div class="ah-grid">
+      <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Locked SRS v1.0</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Loop</div><div class="ah-stat-val">red→green→refactor · green-retry cap</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Unblocks</div><div class="ah-stat-val">Stage 2 (AI Review + CI)</div></div>
+    </div>
+  </div>
+
+  <div class="inner-loop-note">
+    <strong>⛔ Green-retry cap:</strong> TDD runs in one context — write test, see it fail, write code, see it pass. If a test stays red after a bounded number of green attempts on the same AC, the agent stops and escalates to the human with the failing test, the code, and its hypothesis. No second agent to hand off to — the cap guards against thrashing on a genuinely hard or under-specified requirement.
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/implementation/SKILL.md</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.claude/agents/implementation/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># Implementation Agent — Skill File</span>
+
+<span class="c">## Identity</span>
+You implement features from the locked SRS using real TDD.
+You write BOTH the tests and the code, in this order, in one context.
+You do NOT write end-user docs (the AI Review Agent glosses the PR).
+
+<span class="c">## Stack</span>
+Angular 17+ standalone · TS strict · RxJS + takeUntilDestroyed · Signals
+Jest + Angular Testing Library · Playwright · typed HttpClient
+
+<span class="c">## TDD workflow (per acceptance criterion)</span>
+1. Read the AC from docs/srs/feat-*.md
+2. Write the failing test (// AC-01: ...)
+3. Run it — confirm it fails for the right reason (red)
+4. Minimum code to pass (green) → refactor green → next AC
+Order: types → services → components (smart→dumb) → routing → stories
+
+<span class="c">## Traceability + deviations</span>
+Every test links to an AC; every AC has ≥1 test (no test → flagged gap).
+Diverge from the SRS? Log before continuing:
+{"type":"SRS_DEVIATION","criterionId":"AC-03","reason":"...","impact":"MED"}
+
+<span class="c">## Hard rules</span>
+- NEVER write code before its failing test exists
+- NEVER use NgModules or `any`; NEVER subscribe without cleanup
+- Lint/build run ONCE at the Stop hook — not your job to loop
+- DONE only when green and every AC has a test:
+  {"signal":"DONE","verdict":"PASS","prUrl":"...","coveragePercent":84}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools &amp; Skills</div></div>
+    <div class="ss-body">
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools</div>
+          <div class="chips">
+            <span class="tc">Read (docs/srs/feat-*.md)</span>
+            <span class="tc">Read (LTM slice)</span>
+            <span class="tc">Write (src/**/*.ts · *.html · *.scss)</span>
+            <span class="tc">Write (src/**/*.spec.ts · e2e/**)</span>
+            <span class="tc">Bash (ng test --coverage --watch=false)</span>
+            <span class="tc">Bash (npx playwright test)</span>
+            <span class="tc">github:create_pull_request</span>
+          </div>
+        </div>
+        <div>
+          <div class="ts-col-label">📚 Skills</div>
+          <div class="chips">
+            <span class="sc">ac-to-failing-test</span>
+            <span class="sc">angular-standalone-components</span>
+            <span class="sc">rxjs-patterns + signals-state</span>
+            <span class="sc">angular-http-client</span>
+            <span class="sc">angular-component + service testing</span>
+            <span class="sc">playwright-e2e-patterns</span>
+            <span class="sc">storybook-story-writing</span>
+            <span class="sc">coverage-gap + srs-deviation-flagging</span>
+          </div>
+        </div>
+      </div>
+      <div class="note note-warn" style="margin-top:12px;"><strong>Never uses:</strong> README/Compodoc writes (AI Review glosses the PR; deep docs from CI). GitHub Actions triggers (DevOps only).</div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Lean hook set</div></div>
+    <div class="ss-body">
+      <div class="note note-info">Lint/typecheck/build run <strong>once</strong> at Stop — not per-file. No per-call logger.</div>
+      <div class="sp" style="height:10px;"></div>
+      <table class="hook-table">
+        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><span class="event-badge e-session">SessionStart</span></td><td>Inject LTM slice (conventions, patterns/ADRs)</td><td><span class="exit-code ec-0">0</span></td><td>Retrieval, not whole-blob.</td></tr>
+          <tr><td><span class="event-badge e-pre">PreToolUse</span></td><td>Destructive-bash guard + green-retry cap</td><td><span class="exit-code ec-2">2 block</span></td><td>Blocks thrashing past the limit → escalate.</td></tr>
+          <tr><td><span class="event-badge e-stop">Stop</span></td><td>Runs CI once (lint, build, suite + coverage). Validates DONE + PR URL + every AC tested</td><td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td><td>One pass at the end. Cannot stop red, PR-less, or with an uncovered AC.</td></tr>
+        </tbody>
+      </table>
+      <div class="note note-teal" style="margin-top:10px;"><strong>Output = code + tests on a PR branch</strong> (git), plus a small control-plane signal. On a stuck AC: <code>verdict:"ESCALATE"</code> with the failing test, the code, and the hypothesis — the Orchestrator surfaces it, never silently retries past the cap.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ AI REVIEW ═══════ -->
+<div class="panel panel-airev" id="panel-airev">
+  <div class="agent-hero ah-airev">
+    <div class="ah-badge">Stage 2B · AI Review Agent · LLM</div>
+    <div class="ah-name">🔍 AI Review Agent</div>
+    <div class="ah-role">Judgment review where linters can't reach — SRS correctness, Angular anti-patterns, RxJS leaks, architecture — and it writes the PR description / changelog gloss over the Compodoc-generated docs.</div>
+    <div class="ah-grid">
+      <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Stage 1 DONE + CI green</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Reads</div><div class="ah-stat-val">git diff + SRS.md + signals</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Verdict</div><div class="ah-stat-val">APPROVED / CHANGES_REQUESTED</div></div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/ai-review/SKILL.md</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.claude/agents/ai-review/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># AI Review Agent — Skill File</span>
+
+<span class="c">## Identity</span>
+You apply judgment where linters cannot. You read the git diff, SRS.md,
+and the Stage 1 signals together. You do NOT run CLI checks (CI did) and
+you do NOT fix code. You ALSO write the PR description + changelog gloss
+— there is no Docs Agent.
+
+<span class="c">## Review checklist (judgment only)</span>
+SRS correctness — every AC implemented; deviations evaluated, not just listed
+Angular quality — standalone, OnPush, inject(), no constructor subscriptions
+RxJS safety   — takeUntilDestroyed / async pipe; no nested subscribes
+Architecture  — logic in services not components; layer boundaries; no cycles
+
+<span class="c">## Docs gloss (absorbed from the old Docs Agent)</span>
+- PR description: what shipped, why, notable deviations
+- CHANGELOG entry (Keep a Changelog). Deep API ref = Compodoc in CI
+
+<span class="c">## Output</span>
+{"signal":"DONE","verdict":"APPROVED|CHANGES_REQUESTED",
+ "findings":[{"file":"x.ts","line":42,"severity":"error|warn",
+              "category":"rxjs|angular|srs|architecture","description":"..."}],
+ "prGlossWritten":true}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools &amp; Skills</div></div>
+    <div class="ss-body">
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools</div>
+          <div class="chips">
+            <span class="tc">github:get_pull_request (diff)</span>
+            <span class="tc">github:create_pull_request_review</span>
+            <span class="tc">github:create_review_comment (line-level)</span>
+            <span class="tc">github:update_pull_request (description)</span>
+            <span class="tc">Read (docs/srs/feat-*.md)</span>
+            <span class="tc">Read (src/**/*.ts — context)</span>
+            <span class="tc">Write (CHANGELOG.md)</span>
+          </div>
+        </div>
+        <div>
+          <div class="ts-col-label">📚 Skills</div>
+          <div class="chips">
+            <span class="sc">srs-correctness-review</span>
+            <span class="sc">angular-antipattern-detection</span>
+            <span class="sc">rxjs-memory-leak-detection</span>
+            <span class="sc">architecture-review</span>
+            <span class="sc">pr-changelog-gloss</span>
+          </div>
+        </div>
+      </div>
+      <div class="note note-warn" style="margin-top:10px;">Never uses Bash or Edit on source. Reads the diff, reports findings with file + line, writes only the PR description + CHANGELOG. Fixes go back to the Implementation Agent.</div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Hook behaviour</div></div>
+    <div class="ss-body">
+      <table class="hook-table">
+        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><span class="event-badge e-pre">PreToolUse</span></td><td>Bash + Write to src/** — blocked (CHANGELOG.md allowed)</td><td><span class="exit-code ec-2">2 block</span></td><td>Review is read + comment + doc gloss.</td></tr>
+          <tr><td><span class="event-badge e-stop">Stop</span></td><td>Validates a verdict was emitted + PR gloss written</td><td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td><td>An empty response is not a verdict.</td></tr>
+        </tbody>
+      </table>
+      <div class="note note-info" style="margin-top:10px;"><strong>Gate after Stage 2:</strong> CI green AND AI verdict APPROVED. A human checkpoint is forced when the SRS carries <code>risk:high</code> (auth · payments · migrations · data deletion).</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ CI AS HOOKS ═══════ -->
+<div class="panel panel-ci" id="panel-ci">
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚙</div><div class="ss-badge">Stage 2A · No LLM, no agent</div><div class="ss-title">Deterministic CI — Stop hook + GitHub Actions</div></div>
+    <div class="ss-body">
+      <div class="note note-info">
+        Every check here is deterministic. Running it through an LLM agent adds tokens, latency, and non-determinism for zero benefit. So it is plain tooling: a <strong>Stop hook</strong> on the Implementation Agent for fast local feedback, and <strong>GitHub Actions</strong> on the PR as the authoritative gate. The Orchestrator reads the check-run conclusions via the GitHub API.
+      </div>
+      <div class="ci-row">
+        <div class="ci-badge">Checks (fail the gate on error; warnings are non-blocking)</div>
+        <div class="ci-chips">
+          <span class="ci-chip">ESLint</span><span class="ci-chip">Prettier --check</span>
+          <span class="ci-chip">npm audit --audit-level=high</span><span class="ci-chip">ng build --prod</span>
+          <span class="ci-chip">Jest coverage ≥ LTM threshold</span><span class="ci-chip">bundle size vs baseline</span>
+          <span class="ci-chip">Compodoc (API docs)</span>
+        </div>
+      </div>
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.github/workflows/ci.yml — mirrored by the Stop hook</span><span class="code-lang">yaml</span></div>
+        <pre><span class="n">name</span>: <span class="s">ci</span>
+<span class="n">on</span>: [<span class="s">pull_request</span>]
+<span class="n">jobs</span>:
+  <span class="n">verify</span>:
+    <span class="n">runs-on</span>: <span class="s">ubuntu-latest</span>
+    <span class="n">steps</span>:
+      - <span class="k">run</span>: <span class="s">npm ci</span>
+      - <span class="k">run</span>: <span class="s">npx eslint .</span>
+      - <span class="k">run</span>: <span class="s">npx prettier --check "src/**/*.{ts,html,scss}"</span>
+      - <span class="k">run</span>: <span class="s">npm audit --audit-level=high</span>
+      - <span class="k">run</span>: <span class="s">npx ng build --configuration=production</span>
+      - <span class="k">run</span>: <span class="s">npx ng test --coverage --watch=false</span>
+      - <span class="k">run</span>: <span class="s">npx compodoc -p tsconfig.doc.json</span></pre>
+      </div>
+      <div class="note note-green" style="margin-top:10px;"><strong>Why both?</strong> The Stop hook gives a single fast local pass before the PR opens (no per-file lint). GitHub Actions is the source of truth the gate trusts — it cannot be skipped or faked by the agent.</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════ DEVOPS ═══════ -->
+<div class="panel panel-devops" id="panel-devops">
+  <div class="agent-hero ah-devops">
+    <div class="ah-badge">Stage 3 · DevOps Agent · one agent, two phases</div>
+    <div class="ah-name">🚀 DevOps Agent</div>
+    <div class="ah-role">Phase A: pre-deploy checklist + writes the rollout/rollback configuration. Human go/no-go. Phase B: drives GitHub Actions through the gradual rollout and reads health — auto-rollback is a configured safety net, not LLM-run traffic shaping.</div>
+    <div class="ah-grid">
+      <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Stage 2 gates PASS</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Gate between phases</div><div class="ah-stat-val">Human go / no-go</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Verdict</div><div class="ah-stat-val">READY → HEALTHY / DEGRADED</div></div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/devops/SKILL.md</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.claude/agents/devops/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># DevOps Agent — Skill File</span>
+
+<span class="c">## Identity</span>
+One agent, two phases, a human gate between.
+You CONFIGURE deployment; you do not hand-run production traffic shaping.
+
+<span class="c">## Phase A — pre-deploy (verdict: READY | BLOCKED)</span>
+1. CI: all required GitHub Actions checks green
+2. Env: required secrets/vars present
+3. Migrations: tested in staging, no destructive op without backup
+4. Rollback: write the rollback workflow + rollout config (flag steps,
+   error-rate + P95 thresholds) into .github/ — CONFIG, committed to git
+5. Feature flag: defined, initial 0% (deploy dark)
+=> READY only when all five pass. Then STOP for the human go/no-go.
+
+<span class="c">## Human go/no-go (hard gate — never skipped)</span>
+No production traffic moves without an explicit human authorization
+recorded in working memory. Auto-rollback is a safety net, not a substitute.
+
+<span class="c">## Phase B — rollout + health (verdict: HEALTHY | DEGRADED)</span>
+- Dispatch the rollout workflow (it owns the 0→5→25→100 ramp)
+- Read health each step: smoke tests, error-rate delta, P95 vs baseline
+- Thresholds live in the workflow config you wrote in Phase A — the
+  pipeline enforces them, not your token loop
+- On breach: confirm rollback to 0%, open an incident Issue, write timeline
+
+<span class="c">## Output</span>
+{"signal":"DONE","phase":"B","verdict":"HEALTHY|DEGRADED",
+ "rolloutPercent":100,"finalErrorRate":0.12,"finalP95Latency":180}</pre>
+      </div>
+    </div>
+  </div>
+
+  <div class="note note-pink">
+    <strong>Feature-flag rollout — owned by GitHub Actions / flagger, configured by the agent:</strong>
+    <div class="ff-steps">
+      <div class="ff-step"><div class="ff-num">Step 1</div><div class="ff-text">Flag 0% — code live but dark. Smoke tests. Baseline window.</div></div>
+      <div class="ff-step"><div class="ff-num">Step 2</div><div class="ff-text">Canary ~5%. Pipeline checks error-rate + P95 vs thresholds. Clean → proceed.</div></div>
+      <div class="ff-step"><div class="ff-num">Step 3</div><div class="ff-text">5% → 25% → 100%, each gated on metrics. Breach → auto-rollback to 0% + alert.</div></div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools &amp; Skills</div></div>
+    <div class="ss-body">
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools</div>
+          <div class="chips">
+            <span class="tc">github:list_check_runs_for_ref</span>
+            <span class="tc">github:merge_pull_request (READY + human OK)</span>
+            <span class="tc">github:create_workflow_dispatch</span>
+            <span class="tc">github:create_issue (incident)</span>
+            <span class="tc">Write (.github/workflows/*.yml)</span>
+            <span class="tc">Bash (gh secret list --env production)</span>
+            <span class="tc">Read (LTM slice — baselines)</span>
+          </div>
+        </div>
+        <div>
+          <div class="ts-col-label">📚 Skills</div>
+          <div class="chips">
+            <span class="sc">github-actions-reader</span>
+            <span class="sc">pre-deploy-checklist + migration-safety</span>
+            <span class="sc">rollout-config-authoring</span>
+            <span class="sc">post-deploy-health-check</span>
+            <span class="sc">incident-alert-formatting</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Hook behaviour</div></div>
+    <div class="ss-body">
+      <table class="hook-table">
+        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr><td><span class="event-badge e-pre">PreToolUse</span></td><td>Write to src/** — blocked (only .github/** config allowed)</td><td><span class="exit-code ec-2">2 block</span></td><td>DevOps configures pipelines; never edits app code.</td></tr>
+          <tr><td><span class="event-badge e-pre">PreToolUse</span></td><td>merge_pull_request — only if READY + human-authorized recorded</td><td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td><td>No merge without the go/no-go.</td></tr>
+          <tr><td><span class="event-badge e-stop">Stop</span></td><td>Phase A: stop only after READY + human gate. Phase B: stop only at 100% or 0%</td><td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td><td>No partial rollout left dangling.</td></tr>
+        </tbody>
+      </table>
+      <div class="note note-green" style="margin-top:10px;"><strong>On HEALTHY:</strong> the Orchestrator triggers the Retrospective (Learning Loop Layer 1) with the full timeline + deviations + metrics, then clears working memory.</div>
+    </div>
+  </div>
+</div>
+
+<script>
+function switchTab(name){
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelector('.tab-btn.t-'+name).classList.add('active');
+  document.getElementById('panel-'+name).classList.add('active');
+}
+</script>
+</body>
+</html>

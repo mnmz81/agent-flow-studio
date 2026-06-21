@@ -22,17 +22,6 @@ h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:
 
 .canvas{width:100%;max-width:1020px;display:flex;flex-direction:column;gap:20px;}
 
-/* v2 BANNER */
-.v2-banner{border-radius:12px;border:1.5px solid rgba(79,126,255,.3);background:linear-gradient(135deg,rgba(79,126,255,.06),rgba(79,126,255,.02));padding:14px 18px;}
-.v2-tag{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--orch);margin-bottom:5px;}
-.v2-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:6px;}
-.v2-text{font-size:11px;color:var(--dim2);line-height:1.6;}
-.v2-text strong{color:var(--text);}
-.v2-text del{color:var(--dim);}
-.v2-list{margin:8px 0 0 0;padding:0;list-style:none;display:flex;flex-direction:column;gap:4px;}
-.v2-list li{font-size:10.5px;color:var(--dim2);line-height:1.45;padding-left:16px;position:relative;}
-.v2-list li::before{content:'→';position:absolute;left:0;color:var(--orch);}
-
 /* SECTION */
 .section{border-radius:14px;border:1.5px solid;overflow:hidden;}
 .section.s-orch{border-color:rgba(79,126,255,.35);}
@@ -127,21 +116,6 @@ pre{background:#070910;padding:14px 16px;overflow-x:auto;font-family:var(--mono)
 <p class="sub">Claude Code · Angular · GitHub · GitHub Actions · Jest + Playwright · 4 sub-agents · git as the version store</p>
 
 <div class="canvas">
-
-  <!-- v2 MIGRATION BANNER -->
-  <div class="v2-banner">
-    <div class="v2-tag">What changed from v1 → lean v2</div>
-    <div class="v2-title">Lean by leaning on what Claude Code + git already give you</div>
-    <div class="v2-text"><strong>Core principle: never add a layer that simulates infrastructure you already have.</strong> Claude Code gives sub-agents whose final message returns to the parent, deterministic hooks, and a tool surface; git gives versioning and diffs. v2 deletes everything that re-implemented those:</div>
-    <ul class="v2-list">
-      <li><strong>8–9 agents → 4</strong> (SRS · Implementation · AI Review · DevOps). Deterministic CI is hooks + GitHub Actions, not an agent.</li>
-      <li><strong>Write-through memory store deleted.</strong> No magic <code>HOOK_CALLER</code>, no "propose → hook commits". The Orchestrator is the only writer of the control-plane hub; agents write their own durable artifacts (SRS.md, code) committed by git.</li>
-      <li><strong>Per-call PostToolUse logger deleted</strong> — it caused write races + bloat and undid the compression win. Audit trail = git history + Claude Code transcript.</li>
-      <li><strong>history/ versioning deleted</strong> — git already versions both memory files and all artifacts.</li>
-      <li><strong>5 hooks → 3</strong> (SessionStart · PreToolUse · Stop). Lint moved to Stop, not per-file.</li>
-      <li><strong>LTM injected as a relevant slice</strong>, not the whole blob — keeps context small as it grows.</li>
-    </ul>
-  </div>
 
   <!-- 1. FILE STRUCTURE -->
   <div class="section s-file">

@@ -23,13 +23,6 @@ h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:
 
 .canvas{width:100%;max-width:1020px;display:flex;flex-direction:column;gap:28px;}
 
-/* v2 BANNER */
-.v2-banner{border-radius:12px;border:1.5px solid rgba(79,126,255,.3);background:linear-gradient(135deg,rgba(79,126,255,.06),rgba(79,126,255,.02));padding:14px 18px;max-width:1020px;width:100%;}
-.v2-tag{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--orch);margin-bottom:5px;}
-.v2-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:6px;}
-.v2-text{font-size:11px;color:var(--dim2);line-height:1.6;}
-.v2-text strong{color:var(--text);}
-
 /* PHASE DIVIDER */
 .phase-div{display:flex;align-items:center;gap:12px;}
 .phase-div::before,.phase-div::after{content:'';flex:1;height:1px;}
@@ -115,16 +108,6 @@ h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:
 <div class="eyebrow">Implementation Roadmap · Lean v2</div>
 <h1>Agent Skill Inventory</h1>
 <p class="sub">Skills across the 4 agents + orchestrator — what exists, what to create, what to adapt</p>
-
-<!-- v2 BANNER -->
-<div class="v2-banner" style="margin-bottom:22px;">
-  <div class="v2-tag">What changed in v2 · was 8 agents</div>
-  <div class="v2-title">Skills regrouped under 4 agents + orchestrator</div>
-  <div class="v2-text">
-    <strong>Planner/Product/Design skills now live on the SRS Agent; Code/Test skills on the Implementation Agent; Docs skills folded into the AI Review Agent's PR gloss; the Auto-Review skills became CI config (no agent).</strong>
-    Two v1 skills are deleted outright: <code>conflict-detection</code> (no sync round in single-context Phase 0) and per-agent agent-scoring consumers (scoring deferred to 20+ features). Same skill bodies, fewer owners, no coordination glue.
-  </div>
-</div>
 
 <!-- LEGEND -->
 <div class="legend" style="max-width:1020px;width:100%;margin-bottom:18px;">
