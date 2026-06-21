@@ -1,0 +1,745 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Orchestrator — Full Implementation Spec</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090B0F; --surface:#0F1119; --surface2:#13161F; --border:#1A1E2E;
+  --orch:#4F7EFF; --cyan:#38BDF8; --teal:#34D399; --green:#2DD4A7;
+  --yellow:#FBBF24; --orange:#FF7B54; --purple:#A78BFA; --pink:#F472B6;
+  --red:#F87171; --dim:#4E5568; --dim2:#6B7280; --text:#C8CDD8;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:36px 20px 80px;display:flex;flex-direction:column;align-items:center;}
+
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--orch);text-transform:uppercase;text-align:center;margin-bottom:8px;}
+h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:#fff;text-align:center;}
+.sub{margin-top:6px;color:var(--dim2);font-size:12px;text-align:center;margin-bottom:44px;}
+
+.canvas{width:100%;max-width:1020px;display:flex;flex-direction:column;gap:20px;}
+
+/* ── SECTION ── */
+.section{border-radius:14px;border:1.5px solid;overflow:hidden;}
+.section.s-orch{border-color:rgba(79,126,255,.35);}
+.section.s-skill{border-color:rgba(45,212,167,.3);}
+.section.s-hook{border-color:rgba(251,191,36,.3);}
+.section.s-memory{border-color:rgba(167,139,250,.35);}
+.section.s-file{border-color:rgba(56,189,248,.3);}
+
+.sec-header{padding:14px 20px 12px;border-bottom:1px solid;}
+.s-orch .sec-header{background:rgba(79,126,255,.05);border-color:rgba(79,126,255,.15);}
+.s-skill .sec-header{background:rgba(45,212,167,.04);border-color:rgba(45,212,167,.12);}
+.s-hook .sec-header{background:rgba(251,191,36,.04);border-color:rgba(251,191,36,.12);}
+.s-memory .sec-header{background:rgba(167,139,250,.05);border-color:rgba(167,139,250,.12);}
+.s-file .sec-header{background:rgba(56,189,248,.04);border-color:rgba(56,189,248,.12);}
+
+.sec-badge{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
+.s-orch .sec-badge{color:var(--orch);}
+.s-skill .sec-badge{color:var(--green);}
+.s-hook .sec-badge{color:var(--yellow);}
+.s-memory .sec-badge{color:var(--purple);}
+.s-file .sec-badge{color:var(--cyan);}
+.sec-title{font-size:14px;font-weight:600;color:#fff;}
+.sec-desc{font-size:11px;color:var(--dim2);margin-top:3px;line-height:1.5;}
+
+.sec-body{padding:16px 20px;}
+
+/* ── FILE TREE ── */
+.file-tree{
+  font-family:var(--mono);font-size:11px;
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:14px 16px;
+  line-height:1.9;color:var(--dim2);
+}
+.ft-dir{color:var(--cyan);}
+.ft-file{color:var(--text);}
+.ft-comment{color:var(--dim);}
+.ft-new{color:var(--green);}
+
+/* ── CODE BLOCK ── */
+.code-wrap{border-radius:9px;overflow:hidden;margin:8px 0;}
+.code-header{
+  background:var(--surface2);border-bottom:1px solid var(--border);
+  padding:7px 14px;display:flex;align-items:center;justify-content:space-between;
+}
+.code-filename{font-family:var(--mono);font-size:10px;color:var(--cyan);}
+.code-lang{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;}
+pre{
+  background:#070910;padding:14px 16px;overflow-x:auto;
+  font-family:var(--mono);font-size:11px;line-height:1.7;
+  color:#C8CDD8;margin:0;
+}
+.k{color:#A78BFA;}  /* keyword */
+.s{color:#2DD4A7;}  /* string */
+.c{color:#374151;font-style:italic;}  /* comment */
+.n{color:#38BDF8;}  /* name/key */
+.v{color:#FBBF24;}  /* value */
+.fn{color:#F472B6;} /* function */
+.t{color:#34D399;}  /* type */
+.p{color:#FF7B54;}  /* punctuation/operator */
+
+/* ── HOOK TABLE ── */
+.hook-table{width:100%;border-collapse:collapse;font-size:11px;}
+.hook-table th{
+  font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim2);padding:8px 12px;text-align:left;
+  border-bottom:1px solid var(--border);background:var(--surface2);
+}
+.hook-table td{padding:9px 12px;border-bottom:1px solid rgba(26,30,46,.7);vertical-align:top;}
+.hook-table tr:last-child td{border-bottom:none;}
+.hook-table tr:hover td{background:rgba(255,255,255,.01);}
+
+.event-badge{
+  font-family:var(--mono);font-size:9px;padding:2px 7px;border-radius:3px;
+  white-space:nowrap;display:inline-block;
+}
+.e-pre{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.e-post{background:rgba(56,189,248,.1);color:var(--cyan);border:1px solid rgba(56,189,248,.2);}
+.e-stop{background:rgba(45,212,167,.1);color:var(--green);border:1px solid rgba(45,212,167,.2);}
+.e-session{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
+.e-prompt{background:rgba(251,191,36,.1);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+
+.exit-code{
+  font-family:var(--mono);font-size:9px;padding:2px 6px;border-radius:3px;
+  display:inline-block;white-space:nowrap;
+}
+.ec-0{background:rgba(45,212,167,.08);color:var(--green);border:1px solid rgba(45,212,167,.2);}
+.ec-1{background:rgba(251,191,36,.08);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+.ec-2{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+
+.hook-type{font-family:var(--mono);font-size:9px;color:var(--orange);}
+.hook-purpose{font-size:11px;color:var(--dim2);line-height:1.5;}
+.hook-trigger{font-family:var(--mono);font-size:9px;color:var(--purple);}
+
+/* ── SKILL LIST ── */
+.skill-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.skill-item{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:11px 14px;
+}
+.si-badge{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--green);margin-bottom:4px;}
+.si-name{font-size:12px;font-weight:600;color:#fff;margin-bottom:3px;}
+.si-desc{font-size:10.5px;color:var(--dim2);line-height:1.4;}
+.si-trigger{font-family:var(--mono);font-size:9px;color:var(--cyan);margin-top:6px;}
+
+/* ── MEMORY SCHEMA ── */
+.mem-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+
+/* ── NOTE BOX ── */
+.note{border-radius:8px;padding:10px 14px;margin:10px 0;}
+.note-warn{background:rgba(255,123,84,.05);border:1px solid rgba(255,123,84,.2);color:var(--orange);font-size:11px;line-height:1.5;}
+.note-info{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.2);color:var(--cyan);font-size:11px;line-height:1.5;}
+
+/* ── TOOL LIST ── */
+.tool-row{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0;}
+.tool-chip{font-family:var(--mono);font-size:9px;padding:3px 9px;border-radius:4px;border:1px solid;background:rgba(79,126,255,.07);color:var(--orch);border-color:rgba(79,126,255,.2);}
+.tool-chip.mcp{background:rgba(167,139,250,.07);color:var(--purple);border-color:rgba(167,139,250,.2);}
+.tool-chip.native{background:rgba(45,212,167,.07);color:var(--green);border-color:rgba(45,212,167,.2);}
+.tool-chip.bash{background:rgba(56,189,248,.07);color:var(--cyan);border-color:rgba(56,189,248,.2);}
+
+.sp{display:block;}
+.label{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim2);margin-bottom:8px;margin-top:14px;}
+.label:first-child{margin-top:0;}
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Orchestrator · Full Implementation Spec</div>
+<h1>Orchestrator Agent — Skills, Hooks & Memory</h1>
+<p class="sub">Claude Code · Angular monorepo · GitHub · GitHub Actions · Jest + Playwright</p>
+
+<div class="canvas">
+
+  <!-- ════════════════════════════
+       1. FILE STRUCTURE
+  ════════════════════════════ -->
+  <div class="section s-file">
+    <div class="sec-header">
+      <div class="sec-badge">File Structure</div>
+      <div class="sec-title">Project layout for the agent system</div>
+      <div class="sec-desc">Root CLAUDE.md for the orchestrator + per-agent SKILL.md files in subdirectories. Hooks in .claude/hooks/. Memory in .claude/memory/.</div>
+    </div>
+    <div class="sec-body">
+      <div class="file-tree">
+<span class="ft-dir">.claude/</span>
+├── <span class="ft-file">settings.json</span>          <span class="ft-comment"># hook registrations + permissions</span>
+├── <span class="ft-dir">hooks/</span>
+│   ├── <span class="ft-file">pre-write-gate.js</span>      <span class="ft-comment"># PreToolUse — blocks direct memory writes</span>
+│   ├── <span class="ft-file">pre-bash-gate.js</span>       <span class="ft-comment"># PreToolUse — blocks destructive bash</span>
+│   ├── <span class="ft-file">post-tool-logger.js</span>    <span class="ft-comment"># PostToolUse — logs all tool calls + diffs</span>
+│   ├── <span class="ft-file">stop-validator.js</span>      <span class="ft-comment"># Stop — validates wave completion before exit</span>
+│   └── <span class="ft-file">session-start.js</span>       <span class="ft-comment"># SessionStart — loads LTM context injection</span>
+├── <span class="ft-dir">memory/</span>
+│   ├── <span class="ft-file">working-memory.json</span>    <span class="ft-comment"># current feature state (cleared on ship)</span>
+│   ├── <span class="ft-file">long-term-memory.json</span>  <span class="ft-comment"># persistent project knowledge</span>
+│   ├── <span class="ft-file">agent-scores.json</span>      <span class="ft-comment"># per-agent performance history</span>
+│   └── <span class="ft-dir">history/</span>               <span class="ft-comment"># versioned diffs per feature</span>
+│       └── <span class="ft-file">feat-{id}-v{n}.json</span>
+├── <span class="ft-dir">agents/</span>
+│   ├── <span class="ft-dir">planner/</span>
+│   │   └── <span class="ft-new">SKILL.md</span>             <span class="ft-comment"># Planning Agent skill file</span>
+│   ├── <span class="ft-dir">product/</span>
+│   │   └── <span class="ft-new">SKILL.md</span>
+│   ├── <span class="ft-dir">design/</span>
+│   │   └── <span class="ft-new">SKILL.md</span>
+│   ├── <span class="ft-dir">code/</span>
+│   │   └── <span class="ft-new">SKILL.md</span>
+│   ├── <span class="ft-dir">test/</span>
+│   │   └── <span class="ft-new">SKILL.md</span>
+│   ├── <span class="ft-dir">review/</span>
+│   │   └── <span class="ft-new">SKILL.md</span>
+│   ├── <span class="ft-dir">docs/</span>
+│   │   └── <span class="ft-new">SKILL.md</span>
+│   └── <span class="ft-dir">devops/</span>
+│       └── <span class="ft-new">SKILL.md</span>
+<span class="ft-new">CLAUDE.md</span>                       <span class="ft-comment"># root — Orchestrator instructions</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       2. CLAUDE.md
+  ════════════════════════════ -->
+  <div class="section s-orch">
+    <div class="sec-header">
+      <div class="sec-badge">Root · CLAUDE.md</div>
+      <div class="sec-title">Orchestrator system instructions</div>
+      <div class="sec-desc">The root CLAUDE.md defines the Orchestrator's identity, responsibilities, hard rules, and wave dispatch protocol. Every sub-agent spawned inherits this context plus their own SKILL.md.</div>
+    </div>
+    <div class="sec-body">
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">CLAUDE.md</span>
+          <span class="code-lang">markdown</span>
+        </div>
+        <pre><span class="c"># Orchestrator Agent — Root Instructions</span>
+
+<span class="c">## Identity</span>
+You are the <span class="s">Master Orchestrator</span> of a multi-agent dev system.
+You <span class="k">never</span> write code, tests, or documentation yourself.
+Your only job is to <span class="k">plan</span>, <span class="k">dispatch</span>, <span class="k">gate</span>, and <span class="k">aggregate</span>.
+
+<span class="c">## Stack</span>
+- Framework: Angular (strict mode, standalone components)
+- Language: TypeScript
+- Testing: Jest + Angular Testing Library + Playwright
+- CI/CD: GitHub Actions
+- Tickets: GitHub Issues
+- Code review: GitHub PRs
+- Docs generator: Compodoc
+
+<span class="c">## Memory</span>
+- Working memory:  <span class="s">.claude/memory/working-memory.json</span>
+- Long-term memory: <span class="s">.claude/memory/long-term-memory.json</span>
+- Agent scores:    <span class="s">.claude/memory/agent-scores.json</span>
+- You NEVER write to memory directly.
+- All writes are PROPOSED in your response as JSON blocks.
+- The write-through hook (pre-write-gate.js) commits them.
+
+<span class="c">## Wave Protocol</span>
+<span class="k">Phase 0</span> — Discovery:
+  1. Load LTM context → inject into all 3 agents
+  2. Dispatch Planner + Product + Design in parallel
+  3. Wait for all 3 DONE signals in working memory
+  4. Trigger sync round (1 iteration max)
+  5. Run automated QA gate (completeness check)
+  6. Surface UNRESOLVED_FLAGS to human
+  7. On human approval → lock SRS → write to LTM
+
+<span class="k">Phase 1</span> — Development:
+  Wave 1: Dispatch Code Agent → wait DONE
+  Wave 2: Dispatch Test Agent → inner loop (max 2)
+  Wave 3: Dispatch Auto Review + AI Review + Docs in parallel
+          → wait ALL DONE → combined gate
+  Wave 4A: Dispatch DevOps Pre → wait DONE
+           → Feature Flag step
+  Wave 4B: Dispatch DevOps Post → wait health verdict
+
+<span class="c">## Hard Rules</span>
+- NEVER skip a gate, even if the previous wave looks clean
+- NEVER allow an agent to write directly to memory
+- NEVER run more than 2 inner loop iterations (Code↔Test)
+- NEVER modify an agent's SKILL.md without human approval
+- Unresolved conflicts after sync round → UNRESOLVED_FLAG
+- Confidence scoring: every agent section tagged HIGH/MED/LOW
+- Sync round only targets LOW + conflict sections
+
+<span class="c">## Gate Definitions</span>
+<span class="k">Gate 0-1</span> (Auto QA):
+  - All SRS sections present
+  - No open questions remaining
+  - All acceptance criteria testable
+  - No scope contradictions between agents
+
+<span class="k">Gate 0-2</span> (Human):
+  - Developer reads full SRS + UNRESOLVED_FLAGS
+  - Explicit approval required before Phase 1
+
+<span class="k">Gate 1-Review</span> (Combined):
+  - ESLint + Prettier: PASS
+  - npm audit: no critical vulns
+  - ng build --prod: success
+  - Coverage: above threshold (defined in LTM)
+  - AI Review: correctness confirmed
+
+<span class="k">Gate 1-Human</span> (Conditional):
+  - Required if: security feature, SRS deviations, new pattern
+
+<span class="k">Gate 1-PostDeploy</span>:
+  - Smoke tests: PASS
+  - Error rate: within baseline ± threshold
+  - P95 latency: within SLA</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       3. SKILLS
+  ════════════════════════════ -->
+  <div class="section s-skill">
+    <div class="sec-header">
+      <div class="sec-badge">Orchestrator Skills</div>
+      <div class="sec-title">What the Orchestrator knows how to do</div>
+      <div class="sec-desc">Skills are capabilities declared in CLAUDE.md — not tools but knowledge the model applies. Each has a trigger condition that activates it during a session.</div>
+    </div>
+    <div class="sec-body">
+      <div class="skill-grid">
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 01</div>
+          <div class="si-name">LTM Context Injection</div>
+          <div class="si-desc">Reads long-term-memory.json and extracts the relevant patterns, ADRs, and past decisions for the current feature type. Formats them as a context block injected into each agent's prompt before dispatch.</div>
+          <div class="si-trigger">trigger: SessionStart + any new feature brief</div>
+        </div>
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 02</div>
+          <div class="si-name">Wave Dependency Tracking</div>
+          <div class="si-desc">Reads working-memory.json to determine which waves are DONE, which are IN_PROGRESS, and which are BLOCKED. Calculates whether the preconditions for the next wave are met before dispatching.</div>
+          <div class="si-trigger">trigger: after each agent signals completion</div>
+        </div>
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 03</div>
+          <div class="si-name">Conflict Detection</div>
+          <div class="si-desc">After Phase 0 parallel dispatch, reads all three drafts from working memory and identifies: scope contradictions, mismatched step/screen counts, open Q&amp;A, and LOW confidence sections that need sync round attention.</div>
+          <div class="si-trigger">trigger: all 3 Phase 0 agents signal DRAFT_READY</div>
+        </div>
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 04</div>
+          <div class="si-name">Gate Evaluation</div>
+          <div class="si-desc">Evaluates each gate's checklist against working memory state. Produces a structured verdict: PASS, FAIL (with specific failing checks), or CONDITIONAL (human required). Never assumes pass without checking all items.</div>
+          <div class="si-trigger">trigger: after each wave completion</div>
+        </div>
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 05</div>
+          <div class="si-name">Write-Through Proposal</div>
+          <div class="si-desc">Formats all memory updates as a structured JSON proposal block in the response. Never writes directly. Proposal contains: key, value, type (working/longterm), version bump, and reason for the change.</div>
+          <div class="si-trigger">trigger: any state change that needs to be persisted</div>
+        </div>
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 06</div>
+          <div class="si-name">Inner Loop Management</div>
+          <div class="si-desc">Tracks Code↔Test iteration count in working memory. After each Test FAIL, formats a targeted fix brief for the Code Agent (specific failing tests, not the whole SRS). Hard-stops at iteration 2 and escalates to human with full failure report.</div>
+          <div class="si-trigger">trigger: Test Agent signals FAIL</div>
+        </div>
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 07</div>
+          <div class="si-name">SRS Lock + LTM Promotion</div>
+          <div class="si-desc">On human approval of SRS: versions the working memory as a diff, promotes key decisions to long-term memory (ADR entries, scope decisions, risk patterns), and clears working memory. Increments SRS schema version if structure changed.</div>
+          <div class="si-trigger">trigger: Gate 0-2 human approval</div>
+        </div>
+
+        <div class="skill-item">
+          <div class="si-badge">Skill 08</div>
+          <div class="si-name">Retrospective Trigger</div>
+          <div class="si-desc">After DevOps Post signals HEALTHY and feature ships: formats the retrospective brief for the Learning Loop (SRS v1.0 vs. actual outcome). Passes it to the Retrospective Agent with all relevant working memory before clearing it.</div>
+          <div class="si-trigger">trigger: Gate 1-PostDeploy HEALTHY verdict</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       4. HOOKS
+  ════════════════════════════ -->
+  <div class="section s-hook">
+    <div class="sec-header">
+      <div class="sec-badge">Hooks · .claude/hooks/ + settings.json</div>
+      <div class="sec-title">Deterministic control layer — 5 hooks, 3 event types</div>
+      <div class="sec-desc">Hooks enforce rules that CLAUDE.md cannot — they fire deterministically on every matching tool call, independent of the LLM's judgment. Exit code 2 = block. Exit code 0 = allow. Exit code 1 = non-blocking warn.</div>
+    </div>
+    <div class="sec-body">
+
+      <table class="hook-table">
+        <thead>
+          <tr>
+            <th>Event</th>
+            <th>File</th>
+            <th>Type</th>
+            <th>Matcher</th>
+            <th>Exit codes</th>
+            <th>Purpose</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td><span class="event-badge e-session">SessionStart</span></td>
+            <td><span class="hook-type">session-start.js</span></td>
+            <td>command</td>
+            <td>— (always fires)</td>
+            <td><span class="exit-code ec-0">0 continue</span></td>
+            <td class="hook-purpose">Reads long-term-memory.json → injects relevant context as <code>additionalContext</code> into the session. Ensures every agent starts with full LTM awareness.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td><span class="hook-type">pre-write-gate.js</span></td>
+            <td>command</td>
+            <td>Write, Edit</td>
+            <td>
+              <span class="exit-code ec-0">0 allow</span>
+              <span class="exit-code ec-2">2 block</span>
+            </td>
+            <td class="hook-purpose"><strong>Write-through enforcement.</strong> If target path is inside <code>.claude/memory/</code> and the write is not coming from an approved hook script — block it (exit 2). Agents can only propose, orchestrator hook commits.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td><span class="hook-type">pre-bash-gate.js</span></td>
+            <td>command</td>
+            <td>Bash</td>
+            <td>
+              <span class="exit-code ec-0">0 allow</span>
+              <span class="exit-code ec-2">2 block</span>
+              <span class="exit-code ec-1">1 warn</span>
+            </td>
+            <td class="hook-purpose"><strong>Destructive command guard.</strong> Blocks: <code>rm -rf</code>, <code>git push --force</code>, <code>DROP TABLE</code>, any prod env mutation without flag. Also blocks iteration 3+ on inner loop (reads counter from working-memory.json).</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-post">PostToolUse</span></td>
+            <td><span class="hook-type">post-tool-logger.js</span></td>
+            <td>command async</td>
+            <td>— (all tools)</td>
+            <td><span class="exit-code ec-0">0 always</span></td>
+            <td class="hook-purpose"><strong>Audit trail + state versioning.</strong> Logs every tool call (tool name, input, output, timestamp, agent) to <code>working-memory.json</code> as a versioned diff. Non-blocking (async: true). Enables full replay of any session.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-stop">Stop</span></td>
+            <td><span class="hook-type">stop-validator.js</span></td>
+            <td>command</td>
+            <td>— (always fires)</td>
+            <td>
+              <span class="exit-code ec-0">0 allow stop</span>
+              <span class="exit-code ec-2">2 force continue</span>
+            </td>
+            <td class="hook-purpose"><strong>Wave completion guard.</strong> Before allowing the Orchestrator to stop, checks that the current wave has a DONE signal in working memory. If wave is IN_PROGRESS or no verdict recorded — exit 2 (force Claude to keep working). Prevents premature exits mid-wave.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <div class="sp" style="height:16px;"></div>
+
+      <!-- settings.json -->
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">.claude/settings.json</span>
+          <span class="code-lang">json</span>
+        </div>
+        <pre>{
+  <span class="n">"hooks"</span>: {
+    <span class="n">"SessionStart"</span>: [
+      {
+        <span class="n">"hooks"</span>: [{
+          <span class="n">"type"</span>: <span class="s">"command"</span>,
+          <span class="n">"command"</span>: <span class="s">"node .claude/hooks/session-start.js"</span>,
+          <span class="n">"timeout"</span>: <span class="v">10</span>
+        }]
+      }
+    ],
+    <span class="n">"PreToolUse"</span>: [
+      {
+        <span class="n">"matcher"</span>: <span class="s">"Write|Edit"</span>,
+        <span class="n">"hooks"</span>: [{
+          <span class="n">"type"</span>: <span class="s">"command"</span>,
+          <span class="n">"command"</span>: <span class="s">"node .claude/hooks/pre-write-gate.js"</span>,
+          <span class="n">"timeout"</span>: <span class="v">5</span>
+        }]
+      },
+      {
+        <span class="n">"matcher"</span>: <span class="s">"Bash"</span>,
+        <span class="n">"hooks"</span>: [{
+          <span class="n">"type"</span>: <span class="s">"command"</span>,
+          <span class="n">"command"</span>: <span class="s">"node .claude/hooks/pre-bash-gate.js"</span>,
+          <span class="n">"timeout"</span>: <span class="v">5</span>
+        }]
+      }
+    ],
+    <span class="n">"PostToolUse"</span>: [
+      {
+        <span class="n">"hooks"</span>: [{
+          <span class="n">"type"</span>: <span class="s">"command"</span>,
+          <span class="n">"command"</span>: <span class="s">"node .claude/hooks/post-tool-logger.js"</span>,
+          <span class="n">"async"</span>: <span class="k">true</span>,
+          <span class="n">"timeout"</span>: <span class="v">15</span>
+        }]
+      }
+    ],
+    <span class="n">"Stop"</span>: [
+      {
+        <span class="n">"hooks"</span>: [{
+          <span class="n">"type"</span>: <span class="s">"command"</span>,
+          <span class="n">"command"</span>: <span class="s">"node .claude/hooks/stop-validator.js"</span>,
+          <span class="n">"timeout"</span>: <span class="v">8</span>
+        }]
+      }
+    ]
+  },
+  <span class="n">"permissions"</span>: {
+    <span class="n">"allow"</span>: [
+      <span class="s">"Bash(node .claude/hooks/*)"</span>,
+      <span class="s">"Bash(ng *)"</span>,
+      <span class="s">"Bash(npm *)"</span>,
+      <span class="s">"Bash(git status)"</span>,
+      <span class="s">"Bash(git log *)"</span>,
+      <span class="s">"Bash(git diff *)"</span>
+    ],
+    <span class="n">"deny"</span>: [
+      <span class="s">"Bash(rm -rf *)"</span>,
+      <span class="s">"Bash(git push --force*)"</span>,
+      <span class="s">"Write(.claude/memory/*)"</span>  <span class="c">// enforced at permission layer too</span>
+    ]
+  }
+}</pre>
+      </div>
+
+      <div class="sp" style="height:14px;"></div>
+
+      <!-- pre-write-gate.js -->
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">.claude/hooks/pre-write-gate.js</span>
+          <span class="code-lang">javascript</span>
+        </div>
+        <pre><span class="c">#!/usr/bin/env node</span>
+<span class="c">// PreToolUse: Write-through enforcement</span>
+<span class="c">// Blocks direct writes to .claude/memory/ from agents</span>
+
+<span class="k">const</span> <span class="n">input</span> = <span class="fn">JSON</span>.<span class="fn">parse</span>(
+  require(<span class="s">'fs'</span>).<span class="fn">readFileSync</span>(<span class="v">0</span>, <span class="s">'utf8'</span>)
+);
+
+<span class="k">const</span> <span class="n">targetPath</span> = input.<span class="n">tool_input</span>?.<span class="n">file_path</span> ?? <span class="s">''</span>;
+<span class="k">const</span> <span class="n">callerScript</span> = process.<span class="n">env</span>.<span class="n">HOOK_CALLER</span> ?? <span class="s">''</span>;
+
+<span class="k">const</span> <span class="n">isMemoryPath</span> = targetPath.<span class="fn">includes</span>(<span class="s">'.claude/memory/'</span>);
+<span class="k">const</span> <span class="n">isApprovedCaller</span> = callerScript.<span class="fn">includes</span>(<span class="s">'.claude/hooks/'</span>);
+
+<span class="k">if</span> (isMemoryPath && !isApprovedCaller) {
+  process.<span class="n">stderr</span>.<span class="fn">write</span>(
+    <span class="s">'[write-gate] BLOCKED: agents cannot write directly to memory.\n'</span> +
+    <span class="s">'Propose a write-through block in your response instead.\n'</span>
+  );
+  process.<span class="fn">exit</span>(<span class="v">2</span>); <span class="c">// exit 2 = block + feed error to Claude</span>
+}
+
+process.<span class="fn">exit</span>(<span class="v">0</span>); <span class="c">// allow</span></pre>
+      </div>
+
+      <div class="sp" style="height:10px;"></div>
+
+      <!-- stop-validator.js -->
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">.claude/hooks/stop-validator.js</span>
+          <span class="code-lang">javascript</span>
+        </div>
+        <pre><span class="c">#!/usr/bin/env node</span>
+<span class="c">// Stop hook: prevents premature exit mid-wave</span>
+
+<span class="k">const</span> <span class="n">fs</span> = require(<span class="s">'fs'</span>);
+<span class="k">const</span> <span class="n">memory</span> = <span class="fn">JSON</span>.<span class="fn">parse</span>(
+  <span class="n">fs</span>.<span class="fn">readFileSync</span>(<span class="s">'.claude/memory/working-memory.json'</span>, <span class="s">'utf8'</span>)
+);
+
+<span class="k">const</span> <span class="n">currentWave</span>  = memory.<span class="n">currentWave</span>;
+<span class="k">const</span> <span class="n">waveStatus</span>   = memory.<span class="n">waves</span>?.[currentWave]?.<span class="n">status</span>;
+<span class="k">const</span> <span class="n">gateVerdict</span>  = memory.<span class="n">waves</span>?.[currentWave]?.<span class="n">gateVerdict</span>;
+
+<span class="k">if</span> (waveStatus === <span class="s">'IN_PROGRESS'</span> || !gateVerdict) {
+  process.<span class="n">stderr</span>.<span class="fn">write</span>(
+    <span class="s">`[stop-validator] Wave ${currentWave} is not complete.\n`</span> +
+    <span class="s">`Status: ${waveStatus} | Gate: ${gateVerdict ?? 'PENDING'}\n`</span> +
+    <span class="s">'Complete the current wave before stopping.\n'</span>
+  );
+  process.<span class="fn">exit</span>(<span class="v">2</span>); <span class="c">// force Claude to continue</span>
+}
+
+process.<span class="fn">exit</span>(<span class="v">0</span>); <span class="c">// wave is done, allow stop</span></pre>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       5. MEMORY SCHEMA
+  ════════════════════════════ -->
+  <div class="section s-memory">
+    <div class="sec-header">
+      <div class="sec-badge">Memory Schema · JSON</div>
+      <div class="sec-title">working-memory.json + long-term-memory.json</div>
+      <div class="sec-desc">Best practice: JSON for structure + queryability + git-diffability. Both files are versioned — every write creates a diff in .claude/memory/history/.</div>
+    </div>
+    <div class="sec-body">
+
+      <div class="mem-grid">
+
+        <!-- WORKING MEMORY -->
+        <div class="code-wrap" style="margin:0;">
+          <div class="code-header">
+            <span class="code-filename">working-memory.json</span>
+            <span class="code-lang">cleared on ship</span>
+          </div>
+          <pre>{
+  <span class="n">"featureId"</span>: <span class="s">"feat-042"</span>,
+  <span class="n">"featureBrief"</span>: <span class="s">"..."</span>,
+  <span class="n">"phase"</span>: <span class="s">"phase1"</span>,
+  <span class="n">"currentWave"</span>: <span class="s">"wave2-test"</span>,
+  <span class="n">"innerLoopCount"</span>: <span class="v">1</span>,
+  <span class="n">"waves"</span>: {
+    <span class="n">"wave0-planner"</span>: {
+      <span class="n">"status"</span>: <span class="s">"DONE"</span>,
+      <span class="n">"gateVerdict"</span>: <span class="s">"PASS"</span>,
+      <span class="n">"confidence"</span>: {
+        <span class="n">"userStories"</span>: <span class="s">"HIGH"</span>,
+        <span class="n">"testPlan"</span>: <span class="s">"MED"</span>
+      },
+      <span class="n">"openQuestions"</span>: [],
+      <span class="n">"draftRef"</span>: <span class="s">"history/feat-042-v0.1.json"</span>
+    },
+    <span class="n">"wave1-code"</span>: {
+      <span class="n">"status"</span>: <span class="s">"DONE"</span>,
+      <span class="n">"gateVerdict"</span>: <span class="s">"PASS"</span>,
+      <span class="n">"prUrl"</span>: <span class="s">"https://github.com/..."</span>,
+      <span class="n">"srsDeviations"</span>: []
+    },
+    <span class="n">"wave2-test"</span>: {
+      <span class="n">"status"</span>: <span class="s">"IN_PROGRESS"</span>,
+      <span class="n">"gateVerdict"</span>: <span class="k">null</span>,
+      <span class="n">"coveragePercent"</span>: <span class="k">null</span>,
+      <span class="n">"failingTests"</span>: []
+    }
+  },
+  <span class="n">"srsRef"</span>: <span class="s">"history/feat-042-srs-v1.0.json"</span>,
+  <span class="n">"unresolvedFlags"</span>: [],
+  <span class="n">"version"</span>: <span class="v">7</span>,
+  <span class="n">"lastUpdated"</span>: <span class="s">"2026-06-20T14:32:00Z"</span>
+}</pre>
+        </div>
+
+        <!-- LONG-TERM MEMORY -->
+        <div class="code-wrap" style="margin:0;">
+          <div class="code-header">
+            <span class="code-filename">long-term-memory.json</span>
+            <span class="code-lang">persists forever</span>
+          </div>
+          <pre>{
+  <span class="n">"projectMeta"</span>: {
+    <span class="n">"stack"</span>: <span class="s">"Angular 18 + TypeScript 5"</span>,
+    <span class="n">"testFrameworks"</span>: [<span class="s">"Jest"</span>, <span class="s">"Playwright"</span>],
+    <span class="n">"coverageThreshold"</span>: <span class="v">80</span>,
+    <span class="n">"srsSchemaVersion"</span>: <span class="v">3</span>
+  },
+  <span class="n">"adrs"</span>: [
+    {
+      <span class="n">"id"</span>: <span class="s">"ADR-001"</span>,
+      <span class="n">"title"</span>: <span class="s">"Standalone components only"</span>,
+      <span class="n">"decision"</span>: <span class="s">"..."</span>,
+      <span class="n">"date"</span>: <span class="s">"2026-04-10"</span>
+    }
+  ],
+  <span class="n">"patterns"</span>: [
+    {
+      <span class="n">"id"</span>: <span class="s">"PAT-001"</span>,
+      <span class="n">"trigger"</span>: <span class="s">"auth features"</span>,
+      <span class="n">"finding"</span>: <span class="s">"Session expiry edge cases missed in 3/4 features"</span>,
+      <span class="n">"action"</span>: <span class="s">"Planner must add session expiry story explicitly"</span>,
+      <span class="n">"confidence"</span>: <span class="v">0.75</span>
+    }
+  ],
+  <span class="n">"agentScores"</span>: {
+    <span class="n">"planner"</span>: {
+      <span class="n">"criteriaAccuracy"</span>: <span class="v">0.82</span>,
+      <span class="n">"sampleSize"</span>: <span class="v">11</span>
+    },
+    <span class="n">"design"</span>: {
+      <span class="n">"flowStability"</span>: <span class="v">0.71</span>,
+      <span class="n">"sampleSize"</span>: <span class="v">11</span>
+    }
+  },
+  <span class="n">"conventions"</span>: {
+    <span class="n">"componentNaming"</span>: <span class="s">"kebab-case"</span>,
+    <span class="n">"stateManagement"</span>: <span class="s">"NgRx signals"</span>,
+    <span class="n">"httpClient"</span>: <span class="s">"Angular HttpClient with interceptors"</span>
+  },
+  <span class="n">"version"</span>: <span class="v">23</span>,
+  <span class="n">"lastUpdated"</span>: <span class="s">"2026-06-18T09:00:00Z"</span>
+}</pre>
+        </div>
+
+      </div>
+
+      <div class="note note-info" style="margin-top:14px;">
+        <strong>Versioning strategy:</strong> Every write to either file increments <code>version</code> and saves a copy to <code>.claude/memory/history/feat-{id}-v{n}.json</code>. This creates a full diff trail. Git also tracks changes since both files are committed.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ════════════════════════════
+       6. TOOLS WIRED TO ORCHESTRATOR
+  ════════════════════════════ -->
+  <div class="section s-orch">
+    <div class="sec-header">
+      <div class="sec-badge">Tools</div>
+      <div class="sec-title">Concrete tools the Orchestrator uses directly</div>
+      <div class="sec-desc">The Orchestrator itself only reads state, dispatches subagents, and runs gates. Its own tool surface is intentionally narrow.</div>
+    </div>
+    <div class="sec-body">
+
+      <div class="label">Native Claude Code tools</div>
+      <div class="tool-row">
+        <span class="tool-chip native">Read (.claude/memory/*.json)</span>
+        <span class="tool-chip native">Bash (node .claude/hooks/*.js)</span>
+        <span class="tool-chip native">Bash (git log --oneline -20)</span>
+        <span class="tool-chip native">Bash (git diff HEAD)</span>
+        <span class="tool-chip native">Task (dispatch sub-agent)</span>
+      </div>
+
+      <div class="label">GitHub MCP tools</div>
+      <div class="tool-row">
+        <span class="tool-chip mcp">github:create_issue</span>
+        <span class="tool-chip mcp">github:list_issues</span>
+        <span class="tool-chip mcp">github:get_pull_request</span>
+        <span class="tool-chip mcp">github:create_pull_request_review</span>
+        <span class="tool-chip mcp">github:list_check_runs_for_ref</span>
+      </div>
+
+      <div class="label">What the Orchestrator does NOT use directly</div>
+      <div class="note note-warn">
+        Write / Edit / Bash (beyond reads and hooks). The Orchestrator never touches source code, test files, or docs. Those are sub-agent responsibilities. If the Orchestrator finds itself about to write a file — stop and dispatch the correct agent instead.
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

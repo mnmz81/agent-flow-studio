@@ -1,0 +1,757 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Phase 0 Agents — Full Spec</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090B0F; --surface:#0F1119; --surface2:#13161F; --border:#1A1E2E;
+  --orch:#4F7EFF; --cyan:#38BDF8; --teal:#34D399; --green:#2DD4A7;
+  --yellow:#FBBF24; --orange:#FF7B54; --purple:#A78BFA; --pink:#F472B6;
+  --red:#F87171; --lime:#BEF264;
+  --dim:#4E5568; --dim2:#6B7280; --text:#C8CDD8;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+
+  /* agent colours */
+  --planner:#F87171;
+  --product:#F472B6;
+  --design:#BEF264;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:36px 20px 80px;display:flex;flex-direction:column;align-items:center;}
+
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--orch);text-transform:uppercase;text-align:center;margin-bottom:8px;}
+h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:#fff;text-align:center;}
+.sub{margin-top:6px;color:var(--dim2);font-size:12px;text-align:center;margin-bottom:32px;}
+
+/* ── TABS ── */
+.tabs{display:flex;gap:0;width:100%;max-width:1020px;border-bottom:2px solid var(--border);margin-bottom:0;}
+.tab-btn{
+  font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;
+  padding:12px 28px;border:none;background:none;cursor:pointer;
+  color:var(--dim2);border-bottom:2px solid transparent;margin-bottom:-2px;
+  transition:color .15s;display:flex;align-items:center;gap:8px;
+}
+.tab-btn:hover{color:var(--text);}
+.tab-btn.active{color:#fff;font-weight:600;}
+.tab-btn.t-planner.active{border-color:var(--planner);color:var(--planner);}
+.tab-btn.t-product.active{border-color:var(--product);color:var(--product);}
+.tab-btn.t-design.active{border-color:var(--design);color:var(--design);}
+.tab-dot{width:8px;height:8px;border-radius:50%;}
+.tab-btn.t-planner .tab-dot{background:var(--planner);}
+.tab-btn.t-product .tab-dot{background:var(--product);}
+.tab-btn.t-design .tab-dot{background:var(--design);}
+
+/* ── PANELS ── */
+.panel{display:none;width:100%;max-width:1020px;padding-top:24px;}
+.panel.active{display:flex;flex-direction:column;gap:18px;}
+
+/* ── AGENT HERO ── */
+.agent-hero{border-radius:14px;padding:20px 26px;border:1.5px solid;}
+.ah-planner{border-color:rgba(248,113,113,.4);background:linear-gradient(135deg,rgba(248,113,113,.06),rgba(248,113,113,.02));}
+.ah-product{border-color:rgba(244,114,182,.4);background:linear-gradient(135deg,rgba(244,114,182,.06),rgba(244,114,182,.02));}
+.ah-design{border-color:rgba(190,242,100,.35);background:linear-gradient(135deg,rgba(190,242,100,.05),rgba(190,242,100,.01));}
+.ah-badge{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;}
+.ah-planner .ah-badge{color:var(--planner);}
+.ah-product .ah-badge{color:var(--product);}
+.ah-design .ah-badge{color:var(--lime);}
+.ah-name{font-size:18px;font-weight:600;color:#fff;margin-bottom:4px;}
+.ah-role{font-size:12px;color:var(--dim2);margin-bottom:14px;}
+.ah-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.ah-stat{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px 13px;}
+.ah-stat-label{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim2);margin-bottom:3px;}
+.ah-stat-val{font-size:12px;font-weight:600;color:var(--text);}
+
+/* ── SECTION ── */
+.spec-section{border-radius:12px;border:1.5px solid var(--border);overflow:hidden;}
+.ss-header{padding:12px 18px;border-bottom:1px solid var(--border);background:var(--surface2);display:flex;align-items:center;gap:10px;}
+.ss-icon{font-size:16px;}
+.ss-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim2);}
+.ss-title{font-size:13px;font-weight:600;color:#fff;margin-left:2px;}
+.ss-body{padding:16px 18px;}
+
+/* ── CODE ── */
+.code-wrap{border-radius:8px;overflow:hidden;margin:6px 0;}
+.code-header{background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 13px;display:flex;align-items:center;justify-content:space-between;}
+.code-filename{font-family:var(--mono);font-size:10px;color:var(--cyan);}
+.code-lang{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;}
+pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:10.5px;line-height:1.75;color:#C8CDD8;margin:0;}
+.k{color:#A78BFA;} .s{color:#2DD4A7;} .c{color:#2D3748;font-style:italic;}
+.n{color:#38BDF8;} .v{color:#FBBF24;} .fn{color:#F472B6;}
+
+/* ── TOOL / SKILL GRID ── */
+.ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.ts-col-label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:8px;display:flex;align-items:center;gap:6px;}
+.chips{display:flex;flex-wrap:wrap;gap:5px;}
+.tc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px solid;}
+.sc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px dashed;}
+
+/* planner chips */
+.panel-planner .tc{background:rgba(248,113,113,.07);color:var(--planner);border-color:rgba(248,113,113,.25);}
+.panel-planner .sc{color:rgba(248,113,113,.8);border-color:rgba(248,113,113,.3);}
+/* product chips */
+.panel-product .tc{background:rgba(244,114,182,.07);color:var(--product);border-color:rgba(244,114,182,.25);}
+.panel-product .sc{color:rgba(244,114,182,.8);border-color:rgba(244,114,182,.3);}
+/* design chips */
+.panel-design .tc{background:rgba(190,242,100,.07);color:var(--lime);border-color:rgba(190,242,100,.25);}
+.panel-design .sc{color:rgba(190,242,100,.7);border-color:rgba(190,242,100,.3);}
+
+/* ── HOOK TABLE ── */
+.hook-table{width:100%;border-collapse:collapse;font-size:11px;}
+.hook-table th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);padding:8px 11px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface2);}
+.hook-table td{padding:9px 11px;border-bottom:1px solid rgba(26,30,46,.6);vertical-align:top;font-size:10.5px;color:var(--dim2);line-height:1.5;}
+.hook-table tr:last-child td{border-bottom:none;}
+.event-badge{font-family:var(--mono);font-size:8.5px;padding:2px 7px;border-radius:3px;white-space:nowrap;display:inline-block;}
+.e-pre{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.e-post{background:rgba(56,189,248,.1);color:var(--cyan);border:1px solid rgba(56,189,248,.2);}
+.e-stop{background:rgba(45,212,167,.1);color:var(--green);border:1px solid rgba(45,212,167,.2);}
+.e-session{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
+.exit-code{font-family:var(--mono);font-size:8.5px;padding:2px 6px;border-radius:3px;display:inline-block;white-space:nowrap;margin:1px 0;}
+.ec-0{background:rgba(45,212,167,.08);color:var(--green);border:1px solid rgba(45,212,167,.2);}
+.ec-2{background:rgba(248,113,113,.08);color:var(--red);border:1px solid rgba(248,113,113,.2);}
+.ec-1{background:rgba(251,191,36,.08);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
+
+/* ── OUTPUT SCHEMA ── */
+.out-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.out-field{background:var(--surface2);border:1px solid var(--border);border-radius:7px;padding:9px 12px;}
+.of-key{font-family:var(--mono);font-size:9px;color:var(--cyan);margin-bottom:3px;}
+.of-type{font-family:var(--mono);font-size:8.5px;color:var(--purple);margin-bottom:3px;}
+.of-desc{font-size:10.5px;color:var(--dim2);line-height:1.4;}
+
+/* ── SKILL ITEMS ── */
+.skill-list{display:flex;flex-direction:column;gap:8px;}
+.skill-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 13px;}
+.si-name{font-size:12px;font-weight:600;color:#fff;margin-bottom:3px;}
+.si-desc{font-size:10.5px;color:var(--dim2);line-height:1.5;}
+.si-trigger{font-family:var(--mono);font-size:8.5px;color:var(--cyan);margin-top:5px;}
+
+/* ── NOTE ── */
+.note{border-radius:7px;padding:9px 13px;font-size:10.5px;line-height:1.5;margin:8px 0;}
+.note-warn{background:rgba(255,123,84,.05);border:1px solid rgba(255,123,84,.2);color:var(--orange);}
+.note-info{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);color:var(--cyan);}
+.note-green{background:rgba(45,212,167,.05);border:1px solid rgba(45,212,167,.15);color:var(--green);}
+
+.label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:7px;margin-top:13px;display:block;}
+.label:first-child{margin-top:0;}
+.sp{display:block;}
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Phase 0 · Discovery & Spec</div>
+<h1>Phase 0 Agents — Full Implementation Spec</h1>
+<p class="sub">Planner · Product · UI/UX Design — Skills, Hooks, Tools & Output Schema</p>
+
+<!-- TABS -->
+<div class="tabs">
+  <button class="tab-btn t-planner active" onclick="switchTab('planner')">
+    <div class="tab-dot"></div>01 · Planning Agent
+  </button>
+  <button class="tab-btn t-product" onclick="switchTab('product')">
+    <div class="tab-dot"></div>02 · Product Agent
+  </button>
+  <button class="tab-btn t-design" onclick="switchTab('design')">
+    <div class="tab-dot"></div>03 · UI/UX Design Agent
+  </button>
+</div>
+
+<!-- ═══════════════════════════════════════
+     PLANNER PANEL
+═══════════════════════════════════════ -->
+<div class="panel panel-planner active" id="panel-planner">
+
+  <div class="agent-hero ah-planner">
+    <div class="ah-badge">Phase 0 · Agent 01</div>
+    <div class="ah-name">Planning Agent</div>
+    <div class="ah-role">Translates the feature brief into structured user stories, acceptance criteria, task breakdown, and a test plan outline</div>
+    <div class="ah-grid">
+      <div class="ah-stat"><div class="ah-stat-label">Runs in</div><div class="ah-stat-val">Wave 0 — parallel</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Nothing — starts immediately</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Signals</div><div class="ah-stat-val">DRAFT_READY → memory hub</div></div>
+    </div>
+  </div>
+
+  <!-- SKILL.md -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/planner/SKILL.md</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.claude/agents/planner/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># Planning Agent — Skill File</span>
+
+<span class="c">## Identity</span>
+You are the <span class="s">Planning Agent</span> for a multi-agent Angular dev system.
+Your output populates the <span class="s">Planning</span> section of the SRS document.
+You work in parallel with the Product Agent and Design Agent.
+You do NOT write code, design UI, or make product decisions.
+
+<span class="c">## Context you receive (injected by Orchestrator)</span>
+- Feature brief from the developer
+- Relevant patterns from Long-term Memory
+- Current SRS schema (from LTM schemaVersion)
+- Angular project conventions (component naming, state management)
+- Past acceptance criteria accuracy scores (from agent-scores.json)
+
+<span class="c">## Output contract</span>
+You MUST produce all of the following sections.
+Each section MUST include a confidence score: HIGH / MED / LOW.
+If confidence is LOW, add an explicit open question to openQuestions[].
+
+<span class="k">### Required sections</span>
+1. featureOverview        — 2-3 sentence summary
+2. goals                  — bulleted list, max 5
+3. nonGoals               — explicit list of what is NOT in scope
+4. userStories            — array, each with id, role, want, soThat
+5. acceptanceCriteria     — per story, must be testable (Given/When/Then)
+6. taskBreakdown          — ordered list with complexity (S/M/L/XL)
+7. testPlanOutline        — unit / integration / E2E per story
+8. edgeCases              — explicit list, min 3
+9. openQuestions          — anything LOW confidence needs clarification
+
+<span class="c">## Hard rules</span>
+- Every acceptance criterion MUST follow Given/When/Then format
+- Every criterion MUST be directly testable by a machine (no subjective criteria)
+- Non-goals must be explicit — do not leave scope ambiguous
+- Do not reference UI components or design — that is Design Agent's job
+- Do not make product prioritisation decisions — that is Product Agent's job
+- Signal DRAFT_READY in your final line as a JSON block:
+  {"signal": "DRAFT_READY", "agent": "planner", "confidence": {...}}
+
+<span class="c">## Confidence scoring guide</span>
+HIGH — you have clear context, no ambiguity
+MED  — some assumptions made, flagged inline
+LOW  — not enough info, add to openQuestions[]</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS + SKILLS -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools & Skills</div></div>
+    <div class="ss-body">
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools (executable)</div>
+          <div class="chips">
+            <span class="tc">Read (.claude/memory/long-term-memory.json)</span>
+            <span class="tc">Read (.claude/memory/working-memory.json)</span>
+            <span class="tc">github:list_issues (GitHub Issues context)</span>
+            <span class="tc">github:get_issue (read related tickets)</span>
+            <span class="tc">Bash (git log --oneline -10)</span>
+          </div>
+        </div>
+        <div>
+          <div class="ts-col-label">📚 Skills (knowledge)</div>
+          <div class="chips">
+            <span class="sc">Given/When/Then acceptance criteria</span>
+            <span class="sc">User story format (As a… I want… So that…)</span>
+            <span class="sc">Angular complexity estimation (S/M/L/XL)</span>
+            <span class="sc">Test plan design (unit vs integration vs E2E)</span>
+            <span class="sc">Edge case identification</span>
+            <span class="sc">Non-goal articulation</span>
+            <span class="sc">Dependency detection between stories</span>
+            <span class="sc">LTM pattern application</span>
+          </div>
+        </div>
+      </div>
+      <div class="note note-warn" style="margin-top:12px;">
+        <strong>Does NOT have access to:</strong> Write/Edit tools, Bash commands that modify files, Design Agent's output (during parallel phase), Product Agent's output (during parallel phase). Cross-agent reading only happens during the sync round.
+      </div>
+    </div>
+  </div>
+
+  <!-- HOOKS -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Planner-specific hook behaviour</div></div>
+    <div class="ss-body">
+      <div class="note note-info">The Planner inherits all Orchestrator hooks (pre-write-gate, pre-bash-gate, post-tool-logger). It adds one agent-specific Stop hook behaviour.</div>
+      <div class="sp" style="height:10px;"></div>
+      <table class="hook-table">
+        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>Write / Edit — blocked to all memory paths</td>
+            <td><span class="exit-code ec-2">2 block</span></td>
+            <td>Inherited write-through gate. Planner proposes SRS content as text, Orchestrator commits it.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>github:create_issue or github:update_issue</td>
+            <td><span class="exit-code ec-2">2 block</span></td>
+            <td>Planner reads Issues for context only. It never creates or modifies tickets — that happens after SRS lock.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-post">PostToolUse</span></td>
+            <td>All tools — async audit log</td>
+            <td><span class="exit-code ec-0">0 async</span></td>
+            <td>Inherited logger. Records every tool call + confidence scores into working memory diff.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-stop">Stop</span></td>
+            <td>Validates DRAFT_READY signal is present in output before allowing stop</td>
+            <td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td>
+            <td>If the Planner tries to stop without emitting the DRAFT_READY JSON signal — force it to continue and emit the signal.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OUTPUT SCHEMA -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📤</div><div class="ss-badge">Output</div><div class="ss-title">SRS section written to working memory</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">working-memory.json → srs.planning</span><span class="code-lang">json</span></div>
+        <pre>{
+  <span class="n">"planning"</span>: {
+    <span class="n">"featureOverview"</span>: <span class="s">"string"</span>,
+    <span class="n">"goals"</span>: [<span class="s">"string"</span>],
+    <span class="n">"nonGoals"</span>: [<span class="s">"string"</span>],
+    <span class="n">"userStories"</span>: [{
+      <span class="n">"id"</span>: <span class="s">"US-01"</span>,
+      <span class="n">"role"</span>: <span class="s">"string"</span>,
+      <span class="n">"want"</span>: <span class="s">"string"</span>,
+      <span class="n">"soThat"</span>: <span class="s">"string"</span>,
+      <span class="n">"acceptanceCriteria"</span>: [{
+        <span class="n">"id"</span>: <span class="s">"AC-01"</span>,
+        <span class="n">"given"</span>: <span class="s">"string"</span>,
+        <span class="n">"when"</span>: <span class="s">"string"</span>,
+        <span class="n">"then"</span>: <span class="s">"string"</span>,
+        <span class="n">"testType"</span>: <span class="s">"unit|integration|e2e"</span>
+      }]
+    }],
+    <span class="n">"taskBreakdown"</span>: [{
+      <span class="n">"id"</span>: <span class="s">"T-01"</span>,
+      <span class="n">"title"</span>: <span class="s">"string"</span>,
+      <span class="n">"complexity"</span>: <span class="s">"S|M|L|XL"</span>,
+      <span class="n">"storyRef"</span>: <span class="s">"US-01"</span>
+    }],
+    <span class="n">"testPlanOutline"</span>: {
+      <span class="n">"unit"</span>: [<span class="s">"string"</span>],
+      <span class="n">"integration"</span>: [<span class="s">"string"</span>],
+      <span class="n">"e2e"</span>: [<span class="s">"string"</span>]
+    },
+    <span class="n">"edgeCases"</span>: [<span class="s">"string"</span>],
+    <span class="n">"openQuestions"</span>: [<span class="s">"string"</span>],
+    <span class="n">"confidence"</span>: {
+      <span class="n">"userStories"</span>: <span class="s">"HIGH|MED|LOW"</span>,
+      <span class="n">"acceptanceCriteria"</span>: <span class="s">"HIGH|MED|LOW"</span>,
+      <span class="n">"testPlan"</span>: <span class="s">"HIGH|MED|LOW"</span>,
+      <span class="n">"edgeCases"</span>: <span class="s">"HIGH|MED|LOW"</span>
+    }
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════
+     PRODUCT PANEL
+═══════════════════════════════════════ -->
+<div class="panel panel-product" id="panel-product">
+
+  <div class="agent-hero ah-product">
+    <div class="ah-badge">Phase 0 · Agent 02</div>
+    <div class="ah-name">Product Agent</div>
+    <div class="ah-role">Evaluates the feature from a product management perspective — business value, scope enforcement, risk identification, and success metrics</div>
+    <div class="ah-grid">
+      <div class="ah-stat"><div class="ah-stat-label">Runs in</div><div class="ah-stat-val">Wave 0 — parallel</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Nothing — starts immediately</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Signals</div><div class="ah-stat-val">DRAFT_READY → memory hub</div></div>
+    </div>
+  </div>
+
+  <!-- SKILL.md -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/product/SKILL.md</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.claude/agents/product/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># Product Agent — Skill File</span>
+
+<span class="c">## Identity</span>
+You are the <span class="s">Product Agent</span> for a multi-agent Angular dev system.
+Your output populates the <span class="s">Product</span> section of the SRS document.
+You think like a senior product manager: value, risk, scope, metrics.
+You do NOT write code, design UI, or write user stories.
+
+<span class="c">## Context you receive (injected by Orchestrator)</span>
+- Feature brief from the developer
+- Relevant patterns from Long-term Memory (past scope drift, recurring risks)
+- GitHub Issues history (related past features)
+- Past risk flag accuracy scores (from agent-scores.json)
+
+<span class="c">## Output contract</span>
+You MUST produce all of the following sections.
+Each section MUST include a confidence score: HIGH / MED / LOW.
+
+<span class="k">### Required sections</span>
+1. businessValue       — why this feature matters, what problem it solves
+2. successMetrics      — measurable KPIs (not vanity metrics)
+3. scopeBoundary       — explicit v1 boundary (what ships, what does not)
+4. outOfScope          — items explicitly deferred to v2+
+5. riskRegister        — each risk with: description, likelihood, impact, mitigation
+6. dependencies        — other features or systems this depends on
+7. openQuestions       — blockers that need answers before dev starts
+
+<span class="c">## Hard rules</span>
+- Every success metric MUST be measurable (no "improve UX" — use numbers)
+- Scope boundary MUST be a binary list: in / out. No "maybe" items.
+- Risk register MUST have at least 2 risks. If you think there are none — look harder.
+- Flag scope creep immediately: if the brief implies 3 features, say so explicitly.
+- Do not write acceptance criteria — that is Planning Agent's job.
+- Do not make UI decisions — that is Design Agent's job.
+- Signal DRAFT_READY in your final line:
+  {"signal": "DRAFT_READY", "agent": "product", "confidence": {...}}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS + SKILLS -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools & Skills</div></div>
+    <div class="ss-body">
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools (executable)</div>
+          <div class="chips">
+            <span class="tc">Read (.claude/memory/long-term-memory.json)</span>
+            <span class="tc">Read (.claude/memory/working-memory.json)</span>
+            <span class="tc">github:list_issues (roadmap context)</span>
+            <span class="tc">github:get_issue (related feature history)</span>
+            <span class="tc">github:list_pull_requests (past scope patterns)</span>
+          </div>
+        </div>
+        <div>
+          <div class="ts-col-label">📚 Skills (knowledge)</div>
+          <div class="chips">
+            <span class="sc">Scope creep detection</span>
+            <span class="sc">Measurable KPI definition</span>
+            <span class="sc">Risk likelihood × impact matrix</span>
+            <span class="sc">v1 boundary enforcement</span>
+            <span class="sc">Dependency mapping</span>
+            <span class="sc">Business value articulation</span>
+            <span class="sc">LTM risk pattern matching</span>
+            <span class="sc">Feature trade-off analysis</span>
+          </div>
+        </div>
+      </div>
+      <div class="note note-warn" style="margin-top:12px;">
+        <strong>Does NOT have access to:</strong> Write/Edit tools, Storybook, Angular CLI, Bash. The Product Agent is read-only during Phase 0. It never creates GitHub Issues — that happens post SRS lock.
+      </div>
+    </div>
+  </div>
+
+  <!-- HOOKS -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Product Agent hook behaviour</div></div>
+    <div class="ss-body">
+      <div class="note note-info">Inherits all Orchestrator hooks. Product Agent has the same hook profile as Planner — its most important constraint is enforced at the PreToolUse level: it cannot create or modify GitHub Issues during Phase 0.</div>
+      <div class="sp" style="height:10px;"></div>
+      <table class="hook-table">
+        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>Write / Edit — all paths blocked</td>
+            <td><span class="exit-code ec-2">2 block</span></td>
+            <td>Inherited write-through gate.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>github:create_issue / github:update_issue / github:create_label</td>
+            <td><span class="exit-code ec-2">2 block</span></td>
+            <td>Product Agent reads Issues for context. It never creates or modifies them. Issues are created post SRS lock by the Orchestrator.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>Storybook or Angular CLI commands</td>
+            <td><span class="exit-code ec-2">2 block</span></td>
+            <td>Product Agent has no business touching the component library or build system.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-post">PostToolUse</span></td>
+            <td>Async audit log — all tools</td>
+            <td><span class="exit-code ec-0">0 async</span></td>
+            <td>Inherited logger records tool calls + risk flags for retrospective learning.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-stop">Stop</span></td>
+            <td>Validates DRAFT_READY signal + riskRegister has ≥2 entries</td>
+            <td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td>
+            <td>Hard rule: an empty risk register is invalid output. Force the agent to continue if riskRegister.length &lt; 2.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OUTPUT SCHEMA -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📤</div><div class="ss-badge">Output</div><div class="ss-title">SRS section written to working memory</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">working-memory.json → srs.product</span><span class="code-lang">json</span></div>
+        <pre>{
+  <span class="n">"product"</span>: {
+    <span class="n">"businessValue"</span>: <span class="s">"string"</span>,
+    <span class="n">"successMetrics"</span>: [{
+      <span class="n">"metric"</span>: <span class="s">"string"</span>,
+      <span class="n">"baseline"</span>: <span class="s">"string"</span>,
+      <span class="n">"target"</span>: <span class="s">"string"</span>,
+      <span class="n">"measureBy"</span>: <span class="s">"string"</span>
+    }],
+    <span class="n">"scopeBoundary"</span>: {
+      <span class="n">"inScope"</span>: [<span class="s">"string"</span>],
+      <span class="n">"outOfScope"</span>: [<span class="s">"string"</span>]
+    },
+    <span class="n">"riskRegister"</span>: [{
+      <span class="n">"id"</span>: <span class="s">"R-01"</span>,
+      <span class="n">"description"</span>: <span class="s">"string"</span>,
+      <span class="n">"likelihood"</span>: <span class="s">"LOW|MED|HIGH"</span>,
+      <span class="n">"impact"</span>: <span class="s">"LOW|MED|HIGH"</span>,
+      <span class="n">"mitigation"</span>: <span class="s">"string"</span>
+    }],
+    <span class="n">"dependencies"</span>: [{
+      <span class="n">"name"</span>: <span class="s">"string"</span>,
+      <span class="n">"type"</span>: <span class="s">"feature|system|team"</span>,
+      <span class="n">"status"</span>: <span class="s">"ready|blocked|unknown"</span>
+    }],
+    <span class="n">"openQuestions"</span>: [<span class="s">"string"</span>],
+    <span class="n">"confidence"</span>: {
+      <span class="n">"businessValue"</span>: <span class="s">"HIGH|MED|LOW"</span>,
+      <span class="n">"scopeBoundary"</span>: <span class="s">"HIGH|MED|LOW"</span>,
+      <span class="n">"riskRegister"</span>: <span class="s">"HIGH|MED|LOW"</span>
+    }
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ═══════════════════════════════════════
+     DESIGN PANEL
+═══════════════════════════════════════ -->
+<div class="panel panel-design" id="panel-design">
+
+  <div class="agent-hero ah-design">
+    <div class="ah-badge">Phase 0 · Agent 03</div>
+    <div class="ah-name">UI/UX Design Agent</div>
+    <div class="ah-role">Defines the user experience layer — flows, screen inventory, Angular component mapping, and accessibility requirements — using Storybook as the source of truth</div>
+    <div class="ah-grid">
+      <div class="ah-stat"><div class="ah-stat-label">Runs in</div><div class="ah-stat-val">Wave 0 — parallel</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Nothing — starts immediately</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Signals</div><div class="ah-stat-val">DRAFT_READY → memory hub</div></div>
+    </div>
+  </div>
+
+  <!-- SKILL.md -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/design/SKILL.md</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">.claude/agents/design/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># UI/UX Design Agent — Skill File</span>
+
+<span class="c">## Identity</span>
+You are the <span class="s">UI/UX Design Agent</span> for a multi-agent Angular dev system.
+Your output populates the <span class="s">Design</span> section of the SRS document.
+Storybook is your source of truth for what components already exist.
+You do NOT write code, make product decisions, or write acceptance criteria.
+
+<span class="c">## Context you receive (injected by Orchestrator)</span>
+- Feature brief from the developer
+- Long-term Memory: Angular component conventions, past UX flow decisions
+- Storybook component inventory (read from storybook-static/ or stories/)
+- Past UX flow stability scores (from agent-scores.json)
+
+<span class="c">## Storybook usage</span>
+Before defining any component, check Storybook first:
+1. Read existing stories to understand available components + their variants
+2. For each UI element needed: reuse > extend > create new
+3. Document new components that do not exist yet
+4. Document existing components that need new variants or props
+
+<span class="c">## Output contract</span>
+You MUST produce all of the following sections.
+Each section MUST include a confidence score: HIGH / MED / LOW.
+
+<span class="k">### Required sections</span>
+1. uxFlows            — state machine: states, transitions, triggers
+2. screenInventory    — list of views/routes with purpose
+3. componentMap       — per screen: reused / extended / new components
+4. interactionNotes   — key interactions, animations, loading states
+5. accessibilityReqs  — WCAG 2.1 AA requirements specific to this feature
+6. designConstraints  — design system rules, colour tokens, spacing rules
+7. openQuestions      — LOW confidence items needing clarification
+
+<span class="c">## Hard rules</span>
+- Every screen MUST map to at least one user story from Planning Agent's output
+  (during sync round — not available during parallel phase, flag if unsure)
+- Every new component MUST have a proposed Storybook story name
+- Accessibility reqs MUST be concrete: not "be accessible" but specific WCAG criteria
+- Do not invent new design tokens — use what exists in the project
+- Do not write Given/When/Then criteria — that is Planning Agent's job
+- Signal DRAFT_READY in your final line:
+  {"signal": "DRAFT_READY", "agent": "design", "confidence": {...}}</pre>
+      </div>
+    </div>
+  </div>
+
+  <!-- TOOLS + SKILLS -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools & Skills</div></div>
+    <div class="ss-body">
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools (executable)</div>
+          <div class="chips">
+            <span class="tc">Read (.claude/memory/long-term-memory.json)</span>
+            <span class="tc">Read (.claude/memory/working-memory.json)</span>
+            <span class="tc">Read (src/**/*.stories.ts)</span>
+            <span class="tc">Read (src/**/*.component.ts) — interface only</span>
+            <span class="tc">Bash (find src -name "*.stories.ts")</span>
+            <span class="tc">Bash (grep -r "selector:" src/)</span>
+          </div>
+        </div>
+        <div>
+          <div class="ts-col-label">📚 Skills (knowledge)</div>
+          <div class="chips">
+            <span class="sc">UX flow / state machine design</span>
+            <span class="sc">Angular component API reading</span>
+            <span class="sc">Storybook story interpretation</span>
+            <span class="sc">WCAG 2.1 AA requirements</span>
+            <span class="sc">Design token usage</span>
+            <span class="sc">Reuse vs extend vs new decision</span>
+            <span class="sc">Loading / error / empty state design</span>
+            <span class="sc">Angular routing pattern awareness</span>
+            <span class="sc">Screen-to-story mapping</span>
+          </div>
+        </div>
+      </div>
+      <div class="note note-green" style="margin-top:12px;">
+        <strong>Storybook read pattern:</strong> Agent reads <code>*.stories.ts</code> files to understand available components, their <code>args</code> (props), and existing variants. It does NOT run Storybook — it reads the static story files only.
+      </div>
+      <div class="note note-warn" style="margin-top:8px;">
+        <strong>Does NOT have access to:</strong> Write/Edit tools, Angular CLI, npm, GitHub APIs. Design Agent is read-only during Phase 0. It never creates components — that is the Code Agent's job in Phase 1.
+      </div>
+    </div>
+  </div>
+
+  <!-- HOOKS -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Design Agent hook behaviour</div></div>
+    <div class="ss-body">
+      <div class="note note-info">Inherits all Orchestrator hooks. Design Agent has one unique PreToolUse gate: it can only read source files, never write them.</div>
+      <div class="sp" style="height:10px;"></div>
+      <table class="hook-table">
+        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>Write / Edit — all paths blocked</td>
+            <td><span class="exit-code ec-2">2 block</span></td>
+            <td>Inherited write-through gate.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>Bash commands that modify files (ng generate, npm install, etc.)</td>
+            <td><span class="exit-code ec-2">2 block</span></td>
+            <td>Design Agent is read-only. It reads Storybook stories and component selectors but never generates or installs anything.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-pre">PreToolUse</span></td>
+            <td>Read (src/**/*.ts) — allowed only for *.stories.ts and *.component.ts</td>
+            <td><span class="exit-code ec-0">0 allow</span> / <span class="exit-code ec-1">1 warn</span></td>
+            <td>Reads component interfaces to understand props. Warns if reading implementation files deeper than the component class definition.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-post">PostToolUse</span></td>
+            <td>Async audit log — all tools</td>
+            <td><span class="exit-code ec-0">0 async</span></td>
+            <td>Inherited logger. Also records which Storybook components were referenced — useful for the retrospective agent.</td>
+          </tr>
+          <tr>
+            <td><span class="event-badge e-stop">Stop</span></td>
+            <td>Validates DRAFT_READY signal + componentMap has at least 1 entry per screen</td>
+            <td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td>
+            <td>A design output with screens but no component mapping is incomplete. Force continue if any screen has an empty componentMap.</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- OUTPUT SCHEMA -->
+  <div class="spec-section">
+    <div class="ss-header"><div class="ss-icon">📤</div><div class="ss-badge">Output</div><div class="ss-title">SRS section written to working memory</div></div>
+    <div class="ss-body">
+      <div class="code-wrap">
+        <div class="code-header"><span class="code-filename">working-memory.json → srs.design</span><span class="code-lang">json</span></div>
+        <pre>{
+  <span class="n">"design"</span>: {
+    <span class="n">"uxFlows"</span>: [{
+      <span class="n">"id"</span>: <span class="s">"FLOW-01"</span>,
+      <span class="n">"name"</span>: <span class="s">"string"</span>,
+      <span class="n">"states"</span>: [<span class="s">"idle"</span>, <span class="s">"loading"</span>, <span class="s">"success"</span>, <span class="s">"error"</span>],
+      <span class="n">"transitions"</span>: [{
+        <span class="n">"from"</span>: <span class="s">"idle"</span>,
+        <span class="n">"trigger"</span>: <span class="s">"user clicks submit"</span>,
+        <span class="n">"to"</span>: <span class="s">"loading"</span>
+      }]
+    }],
+    <span class="n">"screenInventory"</span>: [{
+      <span class="n">"id"</span>: <span class="s">"SCR-01"</span>,
+      <span class="n">"name"</span>: <span class="s">"string"</span>,
+      <span class="n">"route"</span>: <span class="s">"/feature/path"</span>,
+      <span class="n">"purpose"</span>: <span class="s">"string"</span>,
+      <span class="n">"storyRef"</span>: <span class="s">"US-01"</span>
+    }],
+    <span class="n">"componentMap"</span>: [{
+      <span class="n">"screenId"</span>: <span class="s">"SCR-01"</span>,
+      <span class="n">"components"</span>: [{
+        <span class="n">"name"</span>: <span class="s">"app-button"</span>,
+        <span class="n">"status"</span>: <span class="s">"reuse|extend|new"</span>,
+        <span class="n">"storybookStory"</span>: <span class="s">"Button/Primary"</span>,
+        <span class="n">"changes"</span>: <span class="s">"string|null"</span>
+      }]
+    }],
+    <span class="n">"interactionNotes"</span>: [<span class="s">"string"</span>],
+    <span class="n">"accessibilityReqs"</span>: [{
+      <span class="n">"criterion"</span>: <span class="s">"WCAG 2.1 AA 1.4.3"</span>,
+      <span class="n">"requirement"</span>: <span class="s">"string"</span>,
+      <span class="n">"component"</span>: <span class="s">"string"</span>
+    }],
+    <span class="n">"designConstraints"</span>: [<span class="s">"string"</span>],
+    <span class="n">"openQuestions"</span>: [<span class="s">"string"</span>],
+    <span class="n">"confidence"</span>: {
+      <span class="n">"uxFlows"</span>: <span class="s">"HIGH|MED|LOW"</span>,
+      <span class="n">"componentMap"</span>: <span class="s">"HIGH|MED|LOW"</span>,
+      <span class="n">"accessibilityReqs"</span>: <span class="s">"HIGH|MED|LOW"</span>
+    }
+  }
+}</pre>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+function switchTab(name) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelector('.tab-btn.t-' + name).classList.add('active');
+  document.getElementById('panel-' + name).classList.add('active');
+}
+</script>
+</body>
+</html>

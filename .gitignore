@@ -1,0 +1,9 @@
+node_modules/
+__pycache__/
+*.pyc
+.env
+.venv/
+dist/
+.DS_Store
+.playwright-mcp/
+.claude/settings.local.json

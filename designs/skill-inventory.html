@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Agent Skill Inventory</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090B0F; --surface:#0F1119; --surface2:#13161F; --border:#1A1E2E;
+  --orch:#4F7EFF; --cyan:#38BDF8; --teal:#34D399; --green:#2DD4A7;
+  --yellow:#FBBF24; --orange:#FF7B54; --purple:#A78BFA; --pink:#F472B6;
+  --red:#F87171; --lime:#BEF264;
+  --dim:#4E5568; --dim2:#6B7280; --text:#C8CDD8;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:36px 20px 80px;display:flex;flex-direction:column;align-items:center;}
+
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--orch);text-transform:uppercase;text-align:center;margin-bottom:8px;}
+h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:#fff;text-align:center;}
+.sub{margin-top:6px;color:var(--dim2);font-size:12px;text-align:center;margin-bottom:44px;}
+
+.canvas{width:100%;max-width:1020px;display:flex;flex-direction:column;gap:28px;}
+
+/* ── PHASE DIVIDER ── */
+.phase-div{
+  display:flex;align-items:center;gap:12px;
+}
+.phase-div::before,.phase-div::after{content:'';flex:1;height:1px;}
+.phase-div.p0::before,.phase-div.p0::after{background:rgba(244,114,182,.25);}
+.phase-div.p1::before,.phase-div.p1::after{background:rgba(56,189,248,.25);}
+.phase-div.shared::before,.phase-div.shared::after{background:rgba(167,139,250,.25);}
+.phase-div span{
+  font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;
+  padding:3px 14px;border:1px solid;border-radius:4px;white-space:nowrap;
+}
+.phase-div.p0 span{color:var(--pink);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.05);}
+.phase-div.p1 span{color:var(--cyan);border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.05);}
+.phase-div.shared span{color:var(--purple);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.05);}
+
+/* ── AGENT BLOCK ── */
+.agent-block{border-radius:14px;border:1.5px solid;overflow:hidden;}
+
+.ab-header{
+  padding:14px 20px 12px;border-bottom:1px solid;
+  display:flex;align-items:center;gap:14px;
+}
+.ab-icon{font-size:22px;}
+.ab-badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:3px;}
+.ab-name{font-size:15px;font-weight:600;color:#fff;}
+.ab-role{font-size:11px;color:var(--dim2);margin-top:2px;}
+.ab-body{padding:16px 20px;}
+
+/* ── SKILL TABLE ── */
+.skill-table{width:100%;border-collapse:collapse;}
+.skill-table th{
+  font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;
+  color:var(--dim2);padding:8px 12px;text-align:left;
+  border-bottom:1px solid var(--border);background:var(--surface2);
+}
+.skill-table td{
+  padding:10px 12px;border-bottom:1px solid rgba(26,30,46,.6);
+  vertical-align:top;font-size:11px;line-height:1.5;
+}
+.skill-table tr:last-child td{border-bottom:none;}
+.skill-table tr:hover td{background:rgba(255,255,255,.01);}
+
+.skill-name{font-weight:600;color:#fff;margin-bottom:2px;font-size:12px;}
+.skill-desc{color:var(--dim2);font-size:10.5px;line-height:1.5;}
+.skill-file{font-family:var(--mono);font-size:9px;color:var(--cyan);margin-top:4px;}
+
+.status-badge{
+  font-family:var(--mono);font-size:8px;padding:2px 8px;border-radius:3px;
+  white-space:nowrap;display:inline-block;
+}
+.s-exists{background:rgba(45,212,167,.1);color:var(--green);border:1px solid rgba(45,212,167,.25);}
+.s-create{background:rgba(251,191,36,.1);color:var(--yellow);border:1px solid rgba(251,191,36,.25);}
+.s-adapt{background:rgba(56,189,248,.1);color:var(--cyan);border:1px solid rgba(56,189,248,.25);}
+
+.priority-badge{
+  font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;
+  white-space:nowrap;display:inline-block;
+}
+.p-must{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);}
+.p-should{background:rgba(255,123,84,.1);color:var(--orange);border:1px solid rgba(255,123,84,.25);}
+.p-nice{background:rgba(90,98,117,.2);color:var(--dim2);border:1px solid rgba(90,98,117,.3);}
+
+/* agent colour themes */
+.ab-planner{border-color:rgba(248,113,113,.3);}
+.ab-planner .ab-header{background:rgba(248,113,113,.04);border-color:rgba(248,113,113,.15);}
+.ab-planner .ab-badge{color:var(--red);}
+
+.ab-product{border-color:rgba(244,114,182,.3);}
+.ab-product .ab-header{background:rgba(244,114,182,.04);border-color:rgba(244,114,182,.15);}
+.ab-product .ab-badge{color:var(--pink);}
+
+.ab-design{border-color:rgba(190,242,100,.25);}
+.ab-design .ab-header{background:rgba(190,242,100,.03);border-color:rgba(190,242,100,.12);}
+.ab-design .ab-badge{color:var(--lime);}
+
+.ab-code{border-color:rgba(56,189,248,.3);}
+.ab-code .ab-header{background:rgba(56,189,248,.04);border-color:rgba(56,189,248,.15);}
+.ab-code .ab-badge{color:var(--cyan);}
+
+.ab-test{border-color:rgba(52,211,153,.3);}
+.ab-test .ab-header{background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.15);}
+.ab-test .ab-badge{color:var(--teal);}
+
+.ab-review-auto{border-color:rgba(251,191,36,.3);}
+.ab-review-auto .ab-header{background:rgba(251,191,36,.04);border-color:rgba(251,191,36,.15);}
+.ab-review-auto .ab-badge{color:var(--yellow);}
+
+.ab-review-ai{border-color:rgba(251,191,36,.3);}
+.ab-review-ai .ab-header{background:rgba(251,191,36,.04);border-color:rgba(251,191,36,.15);}
+.ab-review-ai .ab-badge{color:var(--yellow);}
+
+.ab-docs{border-color:rgba(255,123,84,.3);}
+.ab-docs .ab-header{background:rgba(255,123,84,.04);border-color:rgba(255,123,84,.15);}
+.ab-docs .ab-badge{color:var(--orange);}
+
+.ab-devops{border-color:rgba(167,139,250,.3);}
+.ab-devops .ab-header{background:rgba(167,139,250,.04);border-color:rgba(167,139,250,.15);}
+.ab-devops .ab-badge{color:var(--purple);}
+
+.ab-orch{border-color:rgba(79,126,255,.35);}
+.ab-orch .ab-header{background:rgba(79,126,255,.05);border-color:rgba(79,126,255,.2);}
+.ab-orch .ab-badge{color:var(--orch);}
+
+/* ── LEGEND ── */
+.legend{
+  display:flex;gap:20px;flex-wrap:wrap;align-items:center;
+  padding:10px 16px;background:var(--surface);border-radius:8px;
+  border:1px solid var(--border);margin-bottom:8px;
+}
+.leg-item{display:flex;align-items:center;gap:7px;font-size:10.5px;color:var(--dim2);}
+
+/* summary row */
+.summary-row{
+  display:grid;grid-template-columns:repeat(3,1fr);gap:10px;
+  margin-bottom:8px;
+}
+.sum-stat{
+  background:var(--surface2);border:1px solid var(--border);
+  border-radius:8px;padding:10px 14px;text-align:center;
+}
+.sum-num{font-size:22px;font-weight:700;color:#fff;margin-bottom:2px;}
+.sum-label{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--dim2);}
+.sum-stat.s-green .sum-num{color:var(--green);}
+.sum-stat.s-yellow .sum-num{color:var(--yellow);}
+.sum-stat.s-cyan .sum-num{color:var(--cyan);}
+
+.sp{display:block;}
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Implementation Roadmap</div>
+<h1>Agent Skill Inventory</h1>
+<p class="sub">All skills across all agents — what exists, what to create, what to adapt</p>
+
+<!-- LEGEND -->
+<div class="legend" style="max-width:1020px;width:100%;margin-bottom:24px;">
+  <span style="font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;">Status:</span>
+  <div class="leg-item"><span class="status-badge s-exists">exists</span> Already in /mnt/skills — use as-is</div>
+  <div class="leg-item"><span class="status-badge s-adapt">adapt</span> Existing skill — needs Angular/project customization</div>
+  <div class="leg-item"><span class="status-badge s-create">create</span> New skill — write from scratch</div>
+  <span style="font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;margin-left:8px;">Priority:</span>
+  <div class="leg-item"><span class="priority-badge p-must">must</span> Blocking — agent can't function without it</div>
+  <div class="leg-item"><span class="priority-badge p-should">should</span> Important — significant quality impact</div>
+  <div class="leg-item"><span class="priority-badge p-nice">nice</span> Enhancement — adds polish</div>
+</div>
+
+<!-- SUMMARY -->
+<div class="summary-row" style="max-width:1020px;width:100%;margin-bottom:28px;">
+  <div class="sum-stat s-green"><div class="sum-num">6</div><div class="sum-label">Skills exist</div></div>
+  <div class="sum-stat s-cyan"><div class="sum-num">8</div><div class="sum-label">Skills to adapt</div></div>
+  <div class="sum-stat s-yellow"><div class="sum-num">21</div><div class="sum-label">Skills to create</div></div>
+</div>
+
+<div class="canvas">
+
+  <!-- ════ PHASE 0 ════ -->
+  <div class="phase-div p0"><span>Phase 0 · Discovery & Spec</span></div>
+
+  <!-- PLANNER -->
+  <div class="agent-block ab-planner">
+    <div class="ab-header">
+      <div class="ab-icon">🗂️</div>
+      <div>
+        <div class="ab-badge">01 · Planning Agent</div>
+        <div class="ab-name">Planner</div>
+        <div class="ab-role">User stories · Acceptance criteria · Test plan · Edge cases</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">given-when-then</div></div></td>
+            <td><div class="skill-desc">Writes testable acceptance criteria in Given/When/Then format. Enforces that every criterion maps to a concrete machine-testable assertion. Rejects subjective criteria like "feels fast".</div></td>
+            <td><div class="skill-file">.claude/agents/planner/skills/given-when-then.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">user-story-format</div></div></td>
+            <td><div class="skill-desc">Structures stories as "As a [role], I want [action], so that [outcome]". Validates role is specific (not "user"), want is a single action, outcome is measurable.</div></td>
+            <td><div class="skill-file">.claude/agents/planner/skills/user-story-format.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">angular-complexity-estimation</div></div></td>
+            <td><div class="skill-desc">Estimates task complexity (S/M/L/XL) based on Angular-specific signals: new module vs existing, new service vs extension, routing changes, state management impact, number of components.</div></td>
+            <td><div class="skill-file">.claude/agents/planner/skills/angular-complexity-estimation.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">test-plan-design</div></div></td>
+            <td><div class="skill-desc">Maps each acceptance criterion to the correct test type: unit (isolated component/service), integration (HTTP + service interaction), E2E (Playwright user flow). Produces a test plan outline, not actual test code.</div></td>
+            <td><div class="skill-file">.claude/agents/planner/skills/test-plan-design.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:testing-strategy</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">edge-case-identification</div></div></td>
+            <td><div class="skill-desc">Systematically surfaces edge cases: empty states, error states, boundary values, concurrent actions, offline scenarios, permission edge cases, and Angular-specific cases (change detection, async pipe failures).</div></td>
+            <td><div class="skill-file">.claude/agents/planner/skills/edge-case-identification.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">ltm-pattern-application</div></div></td>
+            <td><div class="skill-desc">Reads patterns from Long-term Memory and applies them proactively. If LTM says "auth features always miss session expiry" — add session expiry story automatically, don't wait for the developer to mention it.</div></td>
+            <td><div class="skill-file">.claude/agents/planner/skills/ltm-pattern-application.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- PRODUCT -->
+  <div class="agent-block ab-product">
+    <div class="ab-header">
+      <div class="ab-icon">📦</div>
+      <div>
+        <div class="ab-badge">02 · Product Agent</div>
+        <div class="ab-name">Product</div>
+        <div class="ab-role">Business value · Scope boundary · Risk register · Success metrics</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">scope-boundary-enforcement</div></td>
+            <td><div class="skill-desc">Defines a hard v1 boundary as a binary in/out list. Detects when a feature brief implies multiple features and flags scope creep explicitly. Forces every ambiguous item to be explicitly placed in or out.</div></td>
+            <td><div class="skill-file">.claude/agents/product/skills/scope-boundary-enforcement.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">measurable-kpi-definition</div></td>
+            <td><div class="skill-desc">Converts vague goals into measurable KPIs with baseline + target + measurement method. Rejects vanity metrics. Template: "Metric X moves from [baseline] to [target] measured by [method] within [timeframe]".</div></td>
+            <td><div class="skill-file">.claude/agents/product/skills/measurable-kpi-definition.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">risk-matrix</div></td>
+            <td><div class="skill-desc">Evaluates risks on likelihood × impact matrix. Generates mitigations. Minimum 2 risks required. Categories: technical debt, scope creep, dependency risk, performance, security, user adoption.</div></td>
+            <td><div class="skill-file">.claude/agents/product/skills/risk-matrix.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">dependency-mapping</div></td>
+            <td><div class="skill-desc">Identifies what this feature depends on: other features not yet shipped, external systems, team dependencies. Marks each as ready / blocked / unknown. Blocked dependencies surface as UNRESOLVED_FLAGs.</div></td>
+            <td><div class="skill-file">.claude/agents/product/skills/dependency-mapping.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">ltm-risk-pattern-matching</div></td>
+            <td><div class="skill-desc">Cross-references the current feature type against LTM risk patterns. If a similar feature historically had auth bugs or scope drift — proactively add those as risks without waiting for the developer to mention them.</div></td>
+            <td><div class="skill-file">.claude/agents/product/skills/ltm-risk-pattern-matching.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DESIGN -->
+  <div class="agent-block ab-design">
+    <div class="ab-header">
+      <div class="ab-icon">🎨</div>
+      <div>
+        <div class="ab-badge">03 · UI/UX Design Agent</div>
+        <div class="ab-name">Design</div>
+        <div class="ab-role">UX flows · Component mapping · Storybook · Accessibility</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">ux-flow-state-machine</div></td>
+            <td><div class="skill-desc">Models UX flows as state machines: states (idle, loading, success, error, empty), transitions, and triggers. Ensures every state has a visual representation and every error state has a recovery path.</div></td>
+            <td><div class="skill-file">.claude/agents/design/skills/ux-flow-state-machine.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">storybook-component-reader</div></td>
+            <td><div class="skill-desc">Reads *.stories.ts files to understand available components, their args (props), variants, and usage patterns. Maps feature needs to existing Storybook stories before suggesting new components.</div></td>
+            <td><div class="skill-file">.claude/agents/design/skills/storybook-component-reader.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">reuse-extend-create-decision</div></td>
+            <td><div class="skill-desc">For each UI element: always check Storybook first. Decision tree: reuse existing → extend with new variant → create new. Documents the decision for every component. New components must propose a Storybook story name.</div></td>
+            <td><div class="skill-file">.claude/agents/design/skills/reuse-extend-create-decision.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">wcag-accessibility-requirements</div></td>
+            <td><div class="skill-desc">Maps WCAG 2.1 AA requirements to specific UI elements in the feature. Not generic — produces concrete requirements per component: contrast ratios, keyboard navigation, ARIA labels, focus management, screen reader behaviour.</div></td>
+            <td><div class="skill-file">.claude/agents/design/skills/wcag-accessibility-requirements.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">angular-routing-awareness</div></td>
+            <td><div class="skill-desc">Maps screens to Angular routes. Understands lazy loading implications, route guards, navigation UX (breadcrumbs, back button behaviour). Flags when a new screen requires a new route module vs a dialog/drawer.</div></td>
+            <td><div class="skill-file">.claude/agents/design/skills/angular-routing-awareness.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">loading-error-empty-states</div></td>
+            <td><div class="skill-desc">Ensures every async interaction has designs for: loading skeleton, error with retry, empty state with CTA. Prevents the Code Agent from shipping a feature with missing states that aren't covered in tests either.</div></td>
+            <td><div class="skill-file">.claude/agents/design/skills/loading-error-empty-states.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ PHASE 1 ════ -->
+  <div class="phase-div p1"><span>Phase 1 · Development</span></div>
+
+  <!-- CODE -->
+  <div class="agent-block ab-code">
+    <div class="ab-header">
+      <div class="ab-icon">💻</div>
+      <div>
+        <div class="ab-badge">04 · Code Agent · Wave 1</div>
+        <div class="ab-name">Code Agent</div>
+        <div class="ab-role">Angular implementation · Components · Services · Routing · API</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">angular-standalone-components</div></td>
+            <td><div class="skill-desc">Generates Angular 17+ standalone components with correct imports array, signal-based inputs/outputs, OnPush change detection. Enforces project conventions from LTM (naming, folder structure, barrel exports).</div></td>
+            <td><div class="skill-file">.claude/agents/code/skills/angular-standalone-components.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">rxjs-patterns</div></td>
+            <td><div class="skill-desc">Correct use of RxJS operators in Angular context: switchMap vs mergeMap vs concatMap, takeUntilDestroyed, async pipe usage, avoiding memory leaks, signal interop. Flags common anti-patterns.</div></td>
+            <td><div class="skill-file">.claude/agents/code/skills/rxjs-patterns.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">angular-http-client</div></td>
+            <td><div class="skill-desc">Uses Angular HttpClient with typed responses, proper error handling (catchError), interceptors for auth/logging, retry logic. Generates service methods that match the API contracts from the SRS.</div></td>
+            <td><div class="skill-file">.claude/agents/code/skills/angular-http-client.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">srs-deviation-flagging</div></td>
+            <td><div class="skill-desc">Compares implementation decisions against the locked SRS in working memory. Whenever the code deviates (different API shape, missing acceptance criterion, different flow) — logs a structured deviation flag before continuing.</div></td>
+            <td><div class="skill-file">.claude/agents/code/skills/srs-deviation-flagging.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">storybook-story-writing</div></td>
+            <td><div class="skill-desc">After generating a new Angular component, writes a Storybook story for it: default story, edge case stories (empty, error, loading), and args matching the component's @Input() API.</div></td>
+            <td><div class="skill-file">.claude/agents/code/skills/storybook-story-writing.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">angular-signals-state</div></td>
+            <td><div class="skill-desc">Uses Angular signals for local state management: signal(), computed(), effect(). Knows when to use signals vs BehaviorSubject vs NgRx. Avoids mixing signal and non-signal patterns in the same component.</div></td>
+            <td><div class="skill-file">.claude/agents/code/skills/angular-signals-state.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- TEST -->
+  <div class="agent-block ab-test">
+    <div class="ab-header">
+      <div class="ab-icon">🧪</div>
+      <div>
+        <div class="ab-badge">05 · Test Agent · Wave 2</div>
+        <div class="ab-name">Test Agent</div>
+        <div class="ab-role">Jest unit tests · Angular Testing Library · Playwright E2E · Coverage</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">angular-component-testing</div></td>
+            <td><div class="skill-desc">Writes Jest tests for Angular components using TestBed and Angular Testing Library. Patterns: renderComponent(), userEvent, fixture.detectChanges(), async/await with fakeAsync. Tests behaviour, not implementation.</div></td>
+            <td><div class="skill-file">.claude/agents/test/skills/angular-component-testing.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:testing-strategy</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">angular-service-testing</div></td>
+            <td><div class="skill-desc">Tests Angular services with HttpClientTestingModule: HttpTestingController, expectOne(), flush(). Covers success responses, error responses (4xx/5xx), network errors, and retry logic. Mocks injected dependencies.</div></td>
+            <td><div class="skill-file">.claude/agents/test/skills/angular-service-testing.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">playwright-e2e-patterns</div></td>
+            <td><div class="skill-desc">Writes Playwright tests that follow the page object model. Uses getByRole/getByLabel selectors (not CSS). Covers the full E2E flows from the SRS. Handles async navigation, loading states, and Angular-specific timing (zone.js flush).</div></td>
+            <td><div class="skill-file">.claude/agents/test/skills/playwright-e2e-patterns.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">acceptance-criteria-to-test-mapping</div></td>
+            <td><div class="skill-desc">Reads each Given/When/Then criterion from the locked SRS and produces a corresponding test. Maintains a traceability matrix: AC-01 → test file + test name. Flags any AC with no corresponding test as a coverage gap.</div></td>
+            <td><div class="skill-file">.claude/agents/test/skills/acceptance-criteria-to-test-mapping.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">coverage-gap-analysis</div></td>
+            <td><div class="skill-desc">Reads lcov coverage report and identifies which branches/lines are untested. Cross-references with edge cases from the SRS. Produces a structured gap report that the Review Agent and Orchestrator use for gate evaluation.</div></td>
+            <td><div class="skill-file">.claude/agents/test/skills/coverage-gap-analysis.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AUTO REVIEW -->
+  <div class="agent-block ab-review-auto">
+    <div class="ab-header">
+      <div class="ab-icon">🤖</div>
+      <div>
+        <div class="ab-badge">06A · Auto Review · Wave 3 · No LLM</div>
+        <div class="ab-name">Automated Review</div>
+        <div class="ab-role">ESLint · Prettier · npm audit · ng build · Bundle size</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">eslint-prettier-gate</div></td>
+            <td><div class="skill-desc">Runs ESLint and Prettier --check, parses output into structured pass/fail with specific file + line references. Applies project eslint config. Never auto-fixes — produces a report only. Fails gate on any error (warnings are non-blocking).</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/eslint-prettier-gate.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">security-audit</div></td>
+            <td><div class="skill-desc">Runs npm audit --audit-level=high and ng build --prod. Parses results: critical and high vulnerabilities fail the gate, moderate generates a warning. Surfaces CVE IDs and affected packages in the report.</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/security-audit.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">coverage-threshold-gate</div></td>
+            <td><div class="skill-desc">Reads Jest coverage report and compares against threshold defined in LTM (default 80%). Fails gate if below threshold. Reports per-file breakdown to identify which files are pulling coverage down.</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/coverage-threshold-gate.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">bundle-size-check</div></td>
+            <td><div class="skill-desc">Compares ng build --prod bundle sizes against baseline in LTM. Flags if any chunk grows by more than threshold %. Useful early detection of accidental large dependency imports or missing lazy loading.</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/bundle-size-check.md</div></td>
+            <td><span class="status-badge s-nice">nice</span></td>
+            <td><span class="priority-badge p-nice">nice</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- AI REVIEW -->
+  <div class="agent-block ab-review-ai">
+    <div class="ab-header">
+      <div class="ab-icon">🔍</div>
+      <div>
+        <div class="ab-badge">06B · AI Review · Wave 3 · LLM-powered</div>
+        <div class="ab-name">AI Review Agent</div>
+        <div class="ab-role">SRS correctness · Angular patterns · Architecture · Edge cases</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">srs-correctness-review</div></td>
+            <td><div class="skill-desc">Reads the locked SRS and the code diff side by side. Verifies every acceptance criterion has corresponding code coverage. Flags deviations that the Code Agent already logged but also catches ones the Code Agent missed.</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/srs-correctness-review.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:code-review</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">angular-antipattern-detection</div></td>
+            <td><div class="skill-desc">Identifies Angular-specific anti-patterns: subscribing in constructors without cleanup, nested subscriptions, direct DOM manipulation, using ngOnChanges when computed() would work, improper use of ChangeDetectorRef.</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/angular-antipattern-detection.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">rxjs-memory-leak-detection</div></td>
+            <td><div class="skill-desc">Scans for observable subscriptions without takeUntilDestroyed or unsubscribe. Checks that HTTP calls in components go through services. Identifies interval/timer observables that may not be cleaned up.</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/rxjs-memory-leak-detection.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">architecture-review</div></td>
+            <td><div class="skill-desc">Evaluates whether the implementation follows the project's architecture: correct layer boundaries (component → service → HTTP), no business logic in components, single responsibility, appropriate use of dependency injection.</div></td>
+            <td><div class="skill-file">.claude/agents/review/skills/architecture-review.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:architecture</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DOCS -->
+  <div class="agent-block ab-docs">
+    <div class="ab-header">
+      <div class="ab-icon">📄</div>
+      <div>
+        <div class="ab-badge">07 · Docs Agent · Wave 3</div>
+        <div class="ab-name">Docs Agent</div>
+        <div class="ab-role">README · TSDoc · API docs · ADR · Changelog — from final code</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">tsdoc-inline-comments</div></td>
+            <td><div class="skill-desc">Writes TSDoc comments for public APIs: services, component @Input()/@Output(), utility functions. Format: @param, @returns, @example. Skips trivial getters. Focuses on why, not what (the code shows what).</div></td>
+            <td><div class="skill-file">.claude/agents/docs/skills/tsdoc-inline-comments.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:documentation</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">adr-writing</div></td>
+            <td><div class="skill-desc">Writes Architecture Decision Records for any non-trivial decision made during implementation. Format: Context / Decision / Consequences. Reads SRS deviation flags from working memory to identify decisions that warrant an ADR.</div></td>
+            <td><div class="skill-file">.claude/agents/docs/skills/adr-writing.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:architecture</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">compodoc-readme</div></td>
+            <td><div class="skill-desc">Generates a README section for the new feature that works with Compodoc's format. Includes: what the feature does, which components are involved, how to use them, known limitations. Reads from final code, not from SRS intent.</div></td>
+            <td><div class="skill-file">.claude/agents/docs/skills/compodoc-readme.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">changelog-generation</div></td>
+            <td><div class="skill-desc">Generates a CHANGELOG entry in Keep a Changelog format: Added / Changed / Fixed / Removed sections based on the diff and SRS. Links to the GitHub PR and relevant Issues.</div></td>
+            <td><div class="skill-file">.claude/agents/docs/skills/changelog-generation.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- DEVOPS -->
+  <div class="agent-block ab-devops">
+    <div class="ab-header">
+      <div class="ab-icon">🚀</div>
+      <div>
+        <div class="ab-badge">08 · DevOps Agent · Wave 4A + 4B</div>
+        <div class="ab-name">DevOps Agent</div>
+        <div class="ab-role">GitHub Actions · Pre-deploy checklist · Feature flags · Post-deploy health</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">github-actions-reader</div></td>
+            <td><div class="skill-desc">Reads GitHub Actions workflow runs via API. Checks CI status for the current PR: all required checks green, no skipped steps. Parses check run conclusions and surfaces failing step names in the pre-deploy report.</div></td>
+            <td><div class="skill-file">.claude/agents/devops/skills/github-actions-reader.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:deploy-checklist</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">pre-deploy-checklist</div></td>
+            <td><div class="skill-desc">Runs the full pre-deploy checklist: CI green, env vars set, DB migrations ready and tested, rollback plan defined, infra capacity verified. Produces a READY / BLOCKED verdict with specific blocking items listed.</div></td>
+            <td><div class="skill-file">.claude/agents/devops/skills/pre-deploy-checklist.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:deploy-checklist</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">feature-flag-rollout</div></td>
+            <td><div class="skill-desc">Manages gradual rollout: defines the flag name, sets initial 0% rollout, monitors canary group metrics, increments percentage on health check pass, triggers auto-rollback if error rate exceeds threshold. Documents rollout decisions in working memory.</div></td>
+            <td><div class="skill-file">.claude/agents/devops/skills/feature-flag-rollout.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">post-deploy-health-check</div></td>
+            <td><div class="skill-desc">Runs Playwright smoke tests against production, polls health check endpoints, compares error rate and P95 latency against baseline from LTM. Produces HEALTHY / DEGRADED verdict. On DEGRADED: triggers rollback and formats incident alert.</div></td>
+            <td><div class="skill-file">.claude/agents/devops/skills/post-deploy-health-check.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">incident-alert-formatting</div></td>
+            <td><div class="skill-desc">When post-deploy health check returns DEGRADED: formats a structured incident alert with: affected feature, error rate delta, rollback status, PR link, suggested immediate actions. Ready to post to GitHub Issue or Slack.</div></td>
+            <td><div class="skill-file">.claude/agents/devops/skills/incident-alert-formatting.md</div></td>
+            <td><span class="status-badge s-adapt">adapt</span> <span style="font-size:9px;color:var(--dim2);">from engineering:incident-response</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ════ SHARED / ORCHESTRATOR ════ -->
+  <div class="phase-div shared"><span>Shared · Orchestrator & Learning Loop</span></div>
+
+  <!-- ORCHESTRATOR SKILLS -->
+  <div class="agent-block ab-orch">
+    <div class="ab-header">
+      <div class="ab-icon">🎯</div>
+      <div>
+        <div class="ab-badge">Orchestrator + Learning Loop</div>
+        <div class="ab-name">Cross-cutting Skills</div>
+        <div class="ab-role">Context injection · Wave management · Retrospective · Pattern extraction</div>
+      </div>
+    </div>
+    <div class="ab-body">
+      <table class="skill-table">
+        <thead><tr><th>Skill name</th><th>What it does</th><th>File path</th><th>Status</th><th>Priority</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><div class="skill-name">ltm-context-injection</div></td>
+            <td><div class="skill-desc">Reads long-term-memory.json and extracts the relevant slice for the current feature type: matching patterns, applicable ADRs, agent scores, and conventions. Formats as a compact context block injected into each agent's prompt.</div></td>
+            <td><div class="skill-file">.claude/skills/ltm-context-injection.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">retrospective-analysis</div></td>
+            <td><div class="skill-desc">After feature ships: compares locked SRS v1.0 against what actually shipped. Metrics: acceptance criteria accuracy, scope boundary held or not, test plan coverage, UX flow changes. Outputs structured findings for Pattern Extraction.</div></td>
+            <td><div class="skill-file">.claude/skills/retrospective-analysis.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">pattern-extraction</div></td>
+            <td><div class="skill-desc">Aggregates findings across N retrospectives (threshold: 3+) and identifies recurring patterns. Formats patterns as LTM entries: trigger condition, finding, recommended action, confidence score. Requires human review before writing to LTM.</div></td>
+            <td><div class="skill-file">.claude/skills/pattern-extraction.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-should">should</span></td>
+          </tr>
+          <tr>
+            <td><div class="skill-name">conflict-detection</div></td>
+            <td><div class="skill-desc">During Phase 0 sync round: reads all three agent drafts and identifies contradictions (step count vs screen count), open Q&amp;A that cross agent boundaries, and sections with LOW confidence that need targeted discussion.</div></td>
+            <td><div class="skill-file">.claude/skills/conflict-detection.md</div></td>
+            <td><span class="status-badge s-create">create</span></td>
+            <td><span class="priority-badge p-must">must</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

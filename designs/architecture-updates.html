@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Architecture Updates — Compression + Lint + Priority</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090B0F;--surface:#0F1119;--surface2:#13161F;--border:#1A1E2E;
+  --orch:#4F7EFF;--cyan:#38BDF8;--teal:#34D399;--green:#2DD4A7;
+  --yellow:#FBBF24;--orange:#FF7B54;--purple:#A78BFA;--pink:#F472B6;
+  --red:#F87171;--lime:#BEF264;--dim:#4E5568;--dim2:#6B7280;--text:#C8CDD8;
+  --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:36px 20px 80px;display:flex;flex-direction:column;align-items:center;}
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--orch);text-transform:uppercase;text-align:center;margin-bottom:8px;}
+h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:#fff;text-align:center;}
+.sub{margin-top:6px;color:var(--dim2);font-size:12px;text-align:center;margin-bottom:40px;}
+
+.canvas{width:100%;max-width:1020px;display:flex;flex-direction:column;gap:24px;}
+
+/* CHANGE BADGE */
+.change-strip{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px;}
+.ch{font-family:var(--mono);font-size:8.5px;padding:3px 10px;border-radius:4px;border:1px solid;letter-spacing:.05em;}
+.ch-green{color:var(--green);border-color:rgba(45,212,167,.3);background:rgba(45,212,167,.06);}
+.ch-yellow{color:var(--yellow);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06);}
+.ch-red{color:var(--red);border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.06);}
+
+/* SECTION */
+.section{border-radius:14px;border:1.5px solid;overflow:hidden;}
+.section.s-compression{border-color:rgba(79,126,255,.35);}
+.section.s-lint{border-color:rgba(52,211,153,.3);}
+.section.s-priority{border-color:rgba(251,191,36,.3);}
+
+.sec-header{padding:14px 20px 12px;border-bottom:1px solid;}
+.s-compression .sec-header{background:rgba(79,126,255,.05);border-color:rgba(79,126,255,.15);}
+.s-lint .sec-header{background:rgba(52,211,153,.04);border-color:rgba(52,211,153,.12);}
+.s-priority .sec-header{background:rgba(251,191,36,.04);border-color:rgba(251,191,36,.12);}
+
+.sec-badge{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px;}
+.s-compression .sec-badge{color:var(--orch);}
+.s-lint .sec-badge{color:var(--teal);}
+.s-priority .sec-badge{color:var(--yellow);}
+.sec-title{font-size:14px;font-weight:600;color:#fff;}
+.sec-desc{font-size:11px;color:var(--dim2);margin-top:3px;line-height:1.55;}
+.sec-body{padding:16px 20px;}
+
+/* CODE */
+.code-wrap{border-radius:8px;overflow:hidden;margin:8px 0;}
+.code-header{background:var(--surface2);border-bottom:1px solid var(--border);padding:7px 13px;display:flex;align-items:center;justify-content:space-between;}
+.code-filename{font-family:var(--mono);font-size:10px;color:var(--cyan);}
+.code-lang{font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;}
+pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono);font-size:10.5px;line-height:1.75;color:#C8CDD8;margin:0;}
+.k{color:#A78BFA;}.s{color:#2DD4A7;}.c{color:#2D3748;font-style:italic;}.n{color:#38BDF8;}.v{color:#FBBF24;}.fn{color:#F472B6;}
+
+/* COMPARISON TABLE */
+.compare{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin:10px 0;}
+.comp-col{border-radius:8px;padding:12px 14px;border:1px solid;}
+.comp-col.before{border-color:rgba(248,113,113,.3);background:rgba(248,113,113,.04);}
+.comp-col.after{border-color:rgba(45,212,167,.3);background:rgba(45,212,167,.04);}
+.comp-label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:8px;}
+.comp-col.before .comp-label{color:var(--red);}
+.comp-col.after .comp-label{color:var(--green);}
+.comp-content{font-size:10.5px;color:var(--dim2);line-height:1.6;}
+
+/* PRIORITY TABLE */
+.priority-table{width:100%;border-collapse:collapse;font-size:11px;}
+.priority-table th{font-family:var(--mono);font-size:8px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);padding:8px 12px;text-align:left;border-bottom:1px solid var(--border);background:var(--surface2);}
+.priority-table td{padding:9px 12px;border-bottom:1px solid rgba(26,30,46,.6);vertical-align:middle;font-size:10.5px;}
+.priority-table tr:last-child td{border-bottom:none;}
+.skill-name-cell{font-weight:600;color:#fff;margin-bottom:2px;font-size:11.5px;}
+.skill-agent{font-family:var(--mono);font-size:9px;color:var(--dim2);}
+.badge-row{display:flex;align-items:center;gap:6px;}
+.old-badge{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;text-decoration:line-through;opacity:.5;}
+.arrow{color:var(--dim2);font-size:11px;}
+.new-badge{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;}
+.p-must{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);}
+.p-should{background:rgba(255,123,84,.1);color:var(--orange);border:1px solid rgba(255,123,84,.25);}
+.p-nice{background:rgba(90,98,117,.2);color:var(--dim2);border:1px solid rgba(90,98,117,.3);}
+.reason{font-size:10px;color:var(--dim2);line-height:1.4;}
+
+/* LEVELS TABLE */
+.levels-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin:12px 0;}
+.level-card{border-radius:8px;padding:11px 13px;border:1px solid;}
+.lc-prod{border-color:rgba(45,212,167,.3);background:rgba(45,212,167,.04);}
+.lc-debug{border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.04);}
+.lc-silent{border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.04);}
+.lc-badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px;}
+.lc-prod .lc-badge{color:var(--green);}
+.lc-debug .lc-badge{color:var(--cyan);}
+.lc-silent .lc-badge{color:var(--purple);}
+.lc-name{font-size:12px;font-weight:600;color:#fff;margin-bottom:4px;}
+.lc-desc{font-size:10px;color:var(--dim2);line-height:1.5;}
+
+/* NOTES */
+.note{border-radius:7px;padding:9px 13px;font-size:10.5px;line-height:1.5;margin:8px 0;}
+.note-green{background:rgba(45,212,167,.05);border:1px solid rgba(45,212,167,.15);color:var(--green);}
+.note-warn{background:rgba(255,123,84,.05);border:1px solid rgba(255,123,84,.2);color:var(--orange);}
+.note-info{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);color:var(--cyan);}
+
+/* HOOK DIFF */
+.hook-diff{border-radius:8px;border:1px solid var(--border);overflow:hidden;margin:8px 0;}
+.hd-header{background:var(--surface2);padding:8px 14px;font-family:var(--mono);font-size:9px;color:var(--dim2);text-transform:uppercase;letter-spacing:.1em;border-bottom:1px solid var(--border);}
+.hd-body{display:grid;grid-template-columns:1fr 1fr;gap:0;}
+.hd-col{padding:12px 14px;}
+.hd-col.removed{background:rgba(248,113,113,.04);border-right:1px solid var(--border);}
+.hd-col.added{background:rgba(45,212,167,.04);}
+.hd-col-label{font-family:var(--mono);font-size:8px;text-transform:uppercase;letter-spacing:.08em;margin-bottom:7px;}
+.hd-col.removed .hd-col-label{color:var(--red);}
+.hd-col.added .hd-col-label{color:var(--green);}
+.hd-item{font-size:10.5px;color:var(--dim2);line-height:1.5;padding:3px 0;}
+
+.label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:7px;margin-top:13px;display:block;}
+.label:first-child{margin-top:0;}
+.sp{display:block;}
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Architecture Updates</div>
+<h1>3 Changes — Compression · Lint · Priority</h1>
+<p class="sub">agent-output-compression skill · lint moved to Stop hook · skill priority corrections</p>
+
+<div class="change-strip" style="max-width:1020px;width:100%;margin-bottom:16px;">
+  <span class="ch ch-green">🆕 New skill: agent-output-compression</span>
+  <span class="ch ch-red">🔧 Fix: lint moved from PostToolUse → Stop hook</span>
+  <span class="ch ch-yellow">⬆ Priority bumps: 4 skills upgraded</span>
+</div>
+
+<div class="canvas">
+
+  <!-- ═══════════════════════════════════
+       CHANGE 1: COMPRESSION SKILL
+  ═══════════════════════════════════ -->
+  <div class="section s-compression">
+    <div class="sec-header">
+      <div class="sec-badge">Change 1 · New Shared Skill</div>
+      <div class="sec-title">agent-output-compression</div>
+      <div class="sec-desc">Shared skill inherited by every agent. Defines three output modes. Production mode is the default — JSON only, no prose. Eliminates the biggest source of token waste in multi-agent systems.</div>
+    </div>
+    <div class="sec-body">
+
+      <div class="note note-info">
+        <strong>Why this matters:</strong> In a 5-wave pipeline, if every agent writes 500 tokens of prose explaining what it did, the orchestrator reads all of it. At 8 agents × 500 tokens = 4,000 tokens of noise per feature — before any actual work. Production mode cuts this to near zero.
+      </div>
+
+      <span class="label">Three modes</span>
+      <div class="levels-grid">
+        <div class="level-card lc-prod">
+          <div class="lc-badge">production · default</div>
+          <div class="lc-name">JSON only</div>
+          <div class="lc-desc">Output is the signal JSON block and nothing else. No preamble, no explanation, no prose. The Orchestrator reads the JSON. Humans read the working memory diff if they need context.</div>
+        </div>
+        <div class="level-card lc-debug">
+          <div class="lc-badge">debug · on request</div>
+          <div class="lc-name">Compact prose + JSON</div>
+          <div class="lc-desc">One short paragraph max explaining any non-obvious decisions, then the signal JSON. Used during development and troubleshooting. Trigger: AGENT_MODE=debug in environment.</div>
+        </div>
+        <div class="level-card lc-silent">
+          <div class="lc-badge">silent · orchestrator use</div>
+          <div class="lc-name">JSON only, no logging</div>
+          <div class="lc-desc">Same as production but PostToolUse logger is suppressed. For high-frequency tool calls (e.g. reading many files) where the audit log would flood working memory.</div>
+        </div>
+      </div>
+
+      <!-- THE SKILL FILE -->
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">.claude/skills/agent-output-compression.md</span>
+          <span class="code-lang">markdown — inherited by all agents</span>
+        </div>
+        <pre><span class="c"># Agent Output Compression</span>
+
+<span class="c">## Core rule</span>
+Brain big. Output small.
+Reasoning, planning, and tool use run at full strength.
+Only the final output to the Orchestrator gets compressed.
+
+<span class="c">## Default mode: production</span>
+Your output MUST be the signal JSON block and nothing else.
+No preamble. No "I have completed...". No summary. No explanation.
+The JSON is the output. Everything else is noise.
+
+<span class="k">WRONG:</span>
+"I have successfully completed the implementation of the feature.
+Here is a summary of what I did: [500 words]
+{"signal": "DONE", "agent": "code", ...}"
+
+<span class="k">CORRECT:</span>
+{"signal": "DONE", "agent": "code", "verdict": "PASS",
+ "prUrl": "...", "srsDeviations": [], "lintStatus": "CLEAN"}
+
+<span class="c">## What never gets compressed</span>
+These are load-bearing — reproduce verbatim inside the JSON:
+- File paths, component selectors, API endpoints
+- Error messages, test failure names
+- Deviation descriptions (criterionId + reason + impact)
+- Metric values (coveragePercent, latency, error rates)
+- URLs (PRs, issues, deployments)
+
+<span class="c">## When prose IS allowed (debug mode only)</span>
+Trigger: AGENT_MODE=debug set in environment by Orchestrator.
+Format: max ONE paragraph (3 sentences) explaining non-obvious decisions,
+        followed immediately by the signal JSON.
+Never in production mode.
+
+<span class="c">## Inter-agent Q&A (sync round, Phase 0)</span>
+During the sync round, agents respond to each other's questions.
+These responses MUST also be compressed:
+
+<span class="k">WRONG:</span>
+"That's a great question about the modal vs page flow. After careful
+consideration of the UX implications and the Planner's acceptance
+criteria, I believe that a page flow would be more appropriate..."
+
+<span class="k">CORRECT:</span>
+{"from": "design", "to": "planner", "re": "modal-vs-page",
+ "answer": "page flow", "reason": "modal breaks deep-link requirement AC-03"}
+
+<span class="c">## Token budget awareness</span>
+If you find yourself about to write a sentence that does not change
+what the Orchestrator will do next — delete it.
+Every token you write is a token the Orchestrator must read.
+Respect the pipeline.</pre>
+      </div>
+
+      <!-- ROOT CLAUDE.md ADDITION -->
+      <span class="label">Addition to root CLAUDE.md</span>
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">CLAUDE.md — append to all agent dispatches</span>
+          <span class="code-lang">markdown</span>
+        </div>
+        <pre><span class="c">## Output Mode</span>
+Default mode: <span class="k">production</span>.
+Read .claude/skills/agent-output-compression.md before responding.
+Your final output MUST be only the signal JSON block defined in your SKILL.md.
+No prose. No summary. No preamble.
+Exception: AGENT_MODE=debug is set → one paragraph max, then JSON.</pre>
+      </div>
+
+      <!-- ESTIMATED SAVINGS -->
+      <span class="label">Estimated token savings per feature</span>
+      <div class="compare">
+        <div class="comp-col before">
+          <div class="comp-label">❌ Without compression</div>
+          <div class="comp-content">
+            Planner: ~600 tokens prose + 200 JSON<br>
+            Product: ~500 tokens prose + 150 JSON<br>
+            Design: ~700 tokens prose + 250 JSON<br>
+            Code: ~800 tokens prose + 300 JSON<br>
+            Test: ~600 tokens prose + 200 JSON<br>
+            Review ×2: ~900 tokens prose + 300 JSON<br>
+            Docs: ~400 tokens prose + 100 JSON<br>
+            DevOps ×2: ~600 tokens prose + 200 JSON<br><br>
+            <strong style="color:var(--red);">Prose overhead: ~5,100 tokens/feature</strong>
+          </div>
+        </div>
+        <div class="comp-col after">
+          <div class="comp-label">✓ With compression (production)</div>
+          <div class="comp-content">
+            Planner: ~200 JSON only<br>
+            Product: ~150 JSON only<br>
+            Design: ~250 JSON only<br>
+            Code: ~300 JSON only<br>
+            Test: ~200 JSON only<br>
+            Review ×2: ~300 JSON only<br>
+            Docs: ~100 JSON only<br>
+            DevOps ×2: ~200 JSON only<br><br>
+            <strong style="color:var(--green);">Prose overhead: ~0 tokens/feature</strong>
+          </div>
+        </div>
+      </div>
+      <div class="note note-green">Estimated saving: ~5,000 tokens per feature × however many features you build. At scale this is the difference between affordable and expensive.</div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       CHANGE 2: LINT → STOP HOOK
+  ═══════════════════════════════════ -->
+  <div class="section s-lint">
+    <div class="sec-header">
+      <div class="sec-badge">Change 2 · Hook Fix · Code Agent</div>
+      <div class="sec-title">Lint moved: PostToolUse per-file → Stop hook once</div>
+      <div class="sec-desc">Running ng lint after every single file write would fire dozens of times per feature, consuming CPU and tokens on every small change. Correct pattern: one lint run at the end, before DONE signal.</div>
+    </div>
+    <div class="sec-body">
+
+      <div class="hook-diff">
+        <div class="hd-header">Hook change — Code Agent</div>
+        <div class="hd-body">
+          <div class="hd-col removed">
+            <div class="hd-col-label">❌ Before (broken)</div>
+            <div class="hd-item"><strong style="color:var(--text);">PostToolUse · after every Write</strong></div>
+            <div class="hd-item">→ Runs ng lint on each file after every save</div>
+            <div class="hd-item">→ 20 file writes = 20 lint runs</div>
+            <div class="hd-item">→ Blocks agent on every file (not async)</div>
+            <div class="hd-item">→ Shows same error multiple times as it builds</div>
+            <div class="hd-item">→ CPU-intensive, slow, noisy</div>
+            <div class="hd-item">→ Partially-written files fail lint unnecessarily</div>
+          </div>
+          <div class="hd-col added">
+            <div class="hd-col-label">✓ After (correct)</div>
+            <div class="hd-item"><strong style="color:var(--text);">Stop hook · once, before DONE signal</strong></div>
+            <div class="hd-item">→ Runs ng lint once on entire src/ after all files written</div>
+            <div class="hd-item">→ 1 lint run per feature, not per file</div>
+            <div class="hd-item">→ All errors surfaced at once in structured report</div>
+            <div class="hd-item">→ Code Agent fixes all issues then signals DONE</div>
+            <div class="hd-item">→ Fast, clean, one report to act on</div>
+            <div class="hd-item">→ Consistent with how humans run lint (end of session)</div>
+          </div>
+        </div>
+      </div>
+
+      <span class="label">Updated Stop hook for Code Agent</span>
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">.claude/hooks/stop-code-agent.js</span>
+          <span class="code-lang">javascript</span>
+        </div>
+        <pre><span class="c">#!/usr/bin/env node</span>
+<span class="c">// Stop hook — Code Agent only</span>
+<span class="c">// Runs lint once before allowing DONE signal</span>
+
+<span class="k">const</span> { execSync } = require(<span class="s">'child_process'</span>);
+<span class="k">const</span> fs = require(<span class="s">'fs'</span>);
+
+<span class="k">const</span> memory = <span class="fn">JSON</span>.<span class="fn">parse</span>(
+  fs.<span class="fn">readFileSync</span>(<span class="s">'.claude/memory/working-memory.json'</span>, <span class="s">'utf8'</span>)
+);
+
+<span class="c">// Only applies when Code Agent is the active agent</span>
+<span class="k">if</span> (memory.<span class="n">activeAgent</span> !== <span class="s">'code'</span>) {
+  process.<span class="fn">exit</span>(<span class="v">0</span>);
+}
+
+<span class="c">// Only runs if wave1-code status is about to be DONE</span>
+<span class="k">const</span> wave = memory.<span class="n">waves</span>?.[<span class="s">'wave1-code'</span>];
+<span class="k">if</span> (wave?.<span class="n">status</span> !== <span class="s">'DONE_PENDING_LINT'</span>) {
+  process.<span class="fn">exit</span>(<span class="v">0</span>);
+}
+
+<span class="k">try</span> {
+  <span class="c">// Run lint once on all changed files</span>
+  <span class="k">const</span> result = execSync(<span class="s">'ng lint --format=json 2>&1'</span>, {
+    encoding: <span class="s">'utf8'</span>,
+    timeout: <span class="v">60000</span>
+  });
+
+  <span class="k">const</span> parsed = <span class="fn">JSON</span>.<span class="fn">parse</span>(result);
+  <span class="k">const</span> errors = parsed.<span class="fn">flatMap</span>(f => f.<span class="n">messages</span>)
+                        .<span class="fn">filter</span>(m => m.<span class="n">severity</span> === <span class="v">2</span>); <span class="c">// errors only</span>
+
+  <span class="k">if</span> (errors.<span class="n">length</span> > <span class="v">0</span>) {
+    process.<span class="n">stderr</span>.<span class="fn">write</span>(
+      <span class="s">`[stop-code-agent] Lint FAILED: ${errors.length} error(s).\n`</span> +
+      <span class="s">`Fix all errors before signalling DONE.\n`</span> +
+      <span class="fn">JSON</span>.<span class="fn">stringify</span>(errors.<span class="fn">slice</span>(<span class="v">0</span>, <span class="v">5</span>), <span class="k">null</span>, <span class="v">2</span>) <span class="c">// first 5 errors</span>
+    );
+    process.<span class="fn">exit</span>(<span class="v">2</span>); <span class="c">// force Code Agent to fix and try again</span>
+  }
+
+  <span class="c">// Lint clean — allow stop</span>
+  process.<span class="fn">exit</span>(<span class="v">0</span>);
+
+} <span class="k">catch</span> (e) {
+  process.<span class="n">stderr</span>.<span class="fn">write</span>(<span class="s">`[stop-code-agent] Lint error: ${e.message}\n`</span>);
+  process.<span class="fn">exit</span>(<span class="v">2</span>);
+}</pre>
+      </div>
+
+      <span class="label">Updated settings.json — Stop hooks section</span>
+      <div class="code-wrap">
+        <div class="code-header">
+          <span class="code-filename">.claude/settings.json — Stop hooks (updated)</span>
+          <span class="code-lang">json</span>
+        </div>
+        <pre><span class="n">"Stop"</span>: [
+  {
+    <span class="c">// Orchestrator wave completion guard (existing)</span>
+    <span class="n">"hooks"</span>: [{
+      <span class="n">"type"</span>: <span class="s">"command"</span>,
+      <span class="n">"command"</span>: <span class="s">"node .claude/hooks/stop-validator.js"</span>,
+      <span class="n">"timeout"</span>: <span class="v">8</span>
+    }]
+  },
+  {
+    <span class="c">// Code Agent lint gate (new — replaces PostToolUse lint)</span>
+    <span class="n">"hooks"</span>: [{
+      <span class="n">"type"</span>: <span class="s">"command"</span>,
+      <span class="n">"command"</span>: <span class="s">"node .claude/hooks/stop-code-agent.js"</span>,
+      <span class="n">"timeout"</span>: <span class="v">60</span>
+    }]
+  }
+]</pre>
+      </div>
+
+      <div class="note note-warn">
+        <strong>PostToolUse lint is removed entirely from Code Agent.</strong> The old <code>post-tool-logger.js</code> (async audit) still runs for all tools — that's fine. Only the per-file lint call is removed. Net result: fewer hook invocations, one clean lint report at the end.
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════
+       CHANGE 3: PRIORITY BUMPS
+  ═══════════════════════════════════ -->
+  <div class="section s-priority">
+    <div class="sec-header">
+      <div class="sec-badge">Change 3 · Skill Inventory Update</div>
+      <div class="sec-title">4 skills upgraded in priority</div>
+      <div class="sec-desc">Four skills were under-rated in the original inventory. Each has a concrete Angular-specific reason to be treated as must or should.</div>
+    </div>
+    <div class="sec-body">
+
+      <table class="priority-table">
+        <thead>
+          <tr>
+            <th>Skill</th>
+            <th>Agent</th>
+            <th>Priority change</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="skill-name-cell">bundle-size-check</div>
+              <div class="skill-agent">Auto Review Agent</div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:10px;color:var(--dim2);">auto-review</span></td>
+            <td>
+              <div class="badge-row">
+                <span class="old-badge p-nice">nice</span>
+                <span class="arrow">→</span>
+                <span class="new-badge p-should">should</span>
+              </div>
+            </td>
+            <td class="reason">Angular lazy loading failures are silent — a missing <code>loadChildren</code> import bundles the entire feature module into the main chunk without any warning. Bundle size check is the only automated way to catch this before production.</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="skill-name-cell">angular-signals-state</div>
+              <div class="skill-agent">Code Agent</div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:10px;color:var(--dim2);">code</span></td>
+            <td>
+              <div class="badge-row">
+                <span class="old-badge p-should">should</span>
+                <span class="arrow">→</span>
+                <span class="new-badge p-must">must</span>
+              </div>
+            </td>
+            <td class="reason">Angular 17+ standalone components without signals means using BehaviorSubject + async pipe everywhere — which is the old pattern. The project is on Angular 17+. Not having this skill means the Code Agent defaults to legacy RxJS state management that conflicts with OnPush change detection.</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="skill-name-cell">srs-deviation-detection</div>
+              <div class="skill-agent">Test Agent</div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:10px;color:var(--dim2);">test</span></td>
+            <td>
+              <div class="badge-row">
+                <span class="old-badge p-should">should</span>
+                <span class="arrow">→</span>
+                <span class="new-badge p-must">must</span>
+              </div>
+            </td>
+            <td class="reason">The Test Agent is the only agent that actually runs the code against the SRS criteria. It's the last chance to catch deviations the Code Agent missed or didn't flag. Without this skill, deviations that slip past the Code Agent reach Review with no structured record — making the Review Agent's job much harder.</td>
+          </tr>
+          <tr>
+            <td>
+              <div class="skill-name-cell">loading-error-empty-states</div>
+              <div class="skill-agent">UI/UX Design Agent</div>
+            </td>
+            <td><span style="font-family:var(--mono);font-size:10px;color:var(--dim2);">design</span></td>
+            <td>
+              <div class="badge-row">
+                <span class="old-badge p-should">should</span>
+                <span class="arrow">→</span>
+                <span class="new-badge p-must">must</span>
+              </div>
+            </td>
+            <td class="reason">If the Design Agent doesn't spec loading/error/empty states, the Code Agent will skip them (not in SRS = not implemented), and the Test Agent has no criteria to test them. These states are the most common source of production UX bugs. Must be in the SRS, which means must be in the Design section.</td>
+          </tr>
+        </tbody>
+      </table>
+
+      <span class="label" style="margin-top:16px;">Updated skill inventory summary</span>
+      <div class="compare">
+        <div class="comp-col before">
+          <div class="comp-label">Before</div>
+          <div class="comp-content">
+            must: 18 skills<br>
+            should: 11 skills<br>
+            nice: 2 skills (bundle-size-check + 1)<br>
+            <strong style="color:var(--dim2);">Total: 31 skills</strong>
+          </div>
+        </div>
+        <div class="comp-col after">
+          <div class="comp-label">After + compression skill added</div>
+          <div class="comp-content">
+            must: 21 skills (+3 bumped, +1 new compression)<br>
+            should: 10 skills (−2 bumped to must, +1 bumped from nice)<br>
+            nice: 1 skill<br>
+            <strong style="color:var(--green);">Total: 32 skills</strong>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+</div>
+</body>
+</html>

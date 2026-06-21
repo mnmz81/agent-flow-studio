@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Full System — Unified Architecture</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#090B0F; --surface:#0F1119; --surface2:#13161F; --border:#1A1E2E;
+  --orch:#4F7EFF;
+  --cyan:#38BDF8;   /* Code */
+  --teal:#34D399;   /* Test */
+  --green:#2DD4A7;  /* gates/locked */
+  --yellow:#FBBF24; /* Review */
+  --orange:#FF7B54; /* Docs / DevOps Pre */
+  --purple:#A78BFA; /* Memory / DevOps */
+  --pink:#F472B6;   /* Product / DevOps Post */
+  --red:#F87171;    /* Planning */
+  --lime:#BEF264;   /* Design/UX */
+  --dim:#4E5568; --dim2:#6B7280; --text:#C8CDD8;
+  --mono:'IBM Plex Mono',monospace; --sans:'IBM Plex Sans',sans-serif;
+}
+body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:40px 20px 80px;display:flex;flex-direction:column;align-items:center;}
+
+/* HEADER */
+.eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--orch);text-transform:uppercase;text-align:center;margin-bottom:9px;}
+h1{font-size:clamp(20px,2.6vw,28px);font-weight:600;letter-spacing:-.02em;color:#fff;text-align:center;}
+.sub{margin-top:7px;color:var(--dim2);font-size:12px;font-weight:300;text-align:center;margin-bottom:16px;}
+
+/* STACK STRIP */
+.stack-strip{display:flex;gap:7px;flex-wrap:wrap;justify-content:center;margin-bottom:44px;}
+.ss{font-family:var(--mono);font-size:9px;padding:3px 11px;border-radius:4px;border:1px solid;letter-spacing:.06em;}
+.ss-orch{color:var(--orch);border-color:rgba(79,126,255,.3);background:rgba(79,126,255,.06);}
+.ss-cyan{color:var(--cyan);border-color:rgba(56,189,248,.3);background:rgba(56,189,248,.06);}
+.ss-teal{color:var(--teal);border-color:rgba(52,211,153,.3);background:rgba(52,211,153,.06);}
+.ss-yellow{color:var(--yellow);border-color:rgba(251,191,36,.3);background:rgba(251,191,36,.06);}
+.ss-pink{color:var(--pink);border-color:rgba(244,114,182,.3);background:rgba(244,114,182,.06);}
+.ss-purple{color:var(--purple);border-color:rgba(167,139,250,.3);background:rgba(167,139,250,.06);}
+
+.canvas{width:100%;max-width:1020px;display:flex;flex-direction:column;align-items:center;}
+
+/* CONNECTORS */
+.vc{width:2px;margin:0 auto;position:relative;}
+.vc::after{content:'';position:absolute;bottom:-7px;left:50%;transform:translateX(-50%);border-left:5px solid transparent;border-right:5px solid transparent;}
+.vc-orch{background:var(--orch);} .vc-orch::after{border-top:7px solid var(--orch);}
+.vc-green{background:var(--green);} .vc-green::after{border-top:7px solid var(--green);}
+.vc-teal{background:var(--teal);} .vc-teal::after{border-top:7px solid var(--teal);}
+.vc-purple{background:var(--purple);} .vc-purple::after{border-top:7px solid var(--purple);}
+.conn-row{display:flex;flex-direction:column;align-items:center;}
+.conn-lbl{font-family:var(--mono);font-size:9px;color:var(--dim2);text-transform:uppercase;letter-spacing:.08em;background:var(--bg);padding:2px 10px;border:1px solid var(--border);border-radius:3px;margin:3px 0;white-space:nowrap;}
+.sp{display:block;}
+
+/* USER */
+.user-node{background:var(--surface);border:1.5px solid var(--border);border-radius:10px;padding:12px 30px;font-size:13px;font-weight:600;color:var(--text);display:flex;align-items:center;gap:10px;}
+
+/* ORCHESTRATOR */
+.orch-node{width:100%;background:linear-gradient(135deg,#0C1628,#07101A);border:1.5px solid var(--orch);border-radius:14px;padding:18px 24px;box-shadow:0 0 36px rgba(79,126,255,.12);}
+.orch-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--orch);text-transform:uppercase;margin-bottom:5px;}
+.orch-title{font-size:15px;font-weight:600;color:#fff;}
+.orch-desc{font-size:11px;color:var(--dim2);margin-top:4px;line-height:1.6;}
+.orch-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px;}
+.orch-pill{font-family:var(--mono);font-size:8.5px;padding:3px 10px;border-radius:4px;background:rgba(79,126,255,.08);color:var(--orch);border:1px solid rgba(79,126,255,.18);}
+
+/* MEMORY HUB */
+.mem-hub{width:100%;background:linear-gradient(135deg,#130E25,#0E0B1C);border:1.5px solid rgba(167,139,250,.45);border-radius:14px;padding:18px 22px;box-shadow:0 0 36px rgba(167,139,250,.1);}
+.mh-top{display:flex;align-items:flex-start;gap:12px;margin-bottom:12px;}
+.mh-icon{font-size:20px;}
+.mh-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--purple);text-transform:uppercase;margin-bottom:3px;}
+.mh-title{font-size:14px;font-weight:600;color:#fff;}
+.mh-desc{font-size:11px;color:var(--dim2);line-height:1.55;margin-top:3px;}
+.mh-layers{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.mh-layer{border-radius:8px;padding:11px 14px;border:1px solid;}
+.mhl-wm{border-color:rgba(56,189,248,.2);background:rgba(56,189,248,.03);}
+.mhl-lt{border-color:rgba(52,211,153,.2);background:rgba(52,211,153,.03);}
+.mhl-badge{font-family:var(--mono);font-size:8.5px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+.mhl-wm .mhl-badge{color:var(--cyan);}
+.mhl-lt .mhl-badge{color:var(--teal);}
+.mhl-title{font-size:12px;font-weight:600;color:#fff;margin-bottom:4px;}
+.mhl-items{list-style:none;display:flex;flex-direction:column;gap:3px;}
+.mhl-items li{font-size:10px;color:var(--dim2);display:flex;align-items:flex-start;gap:5px;line-height:1.4;}
+.mhl-items li::before{content:'·';flex-shrink:0;}
+.mhl-note{font-family:var(--mono);font-size:8.5px;margin-top:7px;padding:2px 8px;border-radius:3px;display:inline-block;}
+.mhl-wm .mhl-note{background:rgba(56,189,248,.08);color:var(--cyan);}
+.mhl-lt .mhl-note{background:rgba(52,211,153,.08);color:var(--teal);}
+
+/* PHASE BLOCKS */
+.phase-block{width:100%;border-radius:16px;overflow:hidden;border:1.5px solid;}
+.phase-block.p0{border-color:rgba(244,114,182,.3);}
+.p0 .ph-header{background:linear-gradient(135deg,rgba(244,114,182,.07),rgba(244,114,182,.02));border-bottom:1px solid rgba(244,114,182,.15);}
+.p0 .ph-tag{color:var(--pink);}
+.p0 .ph-num{color:rgba(244,114,182,.15);}
+.phase-block.p1{border-color:rgba(56,189,248,.25);}
+.p1 .ph-header{background:linear-gradient(135deg,rgba(56,189,248,.06),rgba(56,189,248,.02));border-bottom:1px solid rgba(56,189,248,.12);}
+.p1 .ph-tag{color:var(--cyan);}
+.p1 .ph-num{color:rgba(56,189,248,.15);}
+.ph-header{padding:16px 22px 14px;display:flex;align-items:flex-start;justify-content:space-between;position:relative;}
+.ph-num{font-size:56px;font-weight:700;line-height:1;position:absolute;right:20px;top:10px;letter-spacing:-.04em;pointer-events:none;user-select:none;}
+.ph-tag{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;}
+.ph-title{font-size:15px;font-weight:600;color:#fff;}
+.ph-desc{font-size:11px;color:var(--dim2);margin-top:3px;line-height:1.5;max-width:70%;}
+.ph-body{padding:16px 20px 18px;}
+
+/* WAVE SEP */
+.wave-sep{display:flex;align-items:center;gap:8px;margin:14px 0 12px;}
+.wave-sep::before,.wave-sep::after{content:'';flex:1;height:1px;background:var(--border);}
+.wave-sep span{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 10px;border:1px solid;border-radius:3px;white-space:nowrap;}
+.ws-pink span{color:var(--pink);border-color:rgba(244,114,182,.25);background:rgba(244,114,182,.05);}
+.ws-cyan span{color:var(--cyan);border-color:rgba(56,189,248,.25);background:rgba(56,189,248,.05);}
+.ws-teal span{color:var(--teal);border-color:rgba(52,211,153,.25);background:rgba(52,211,153,.05);}
+.ws-yellow span{color:var(--yellow);border-color:rgba(251,191,36,.25);background:rgba(251,191,36,.05);}
+.ws-orange span{color:var(--orange);border-color:rgba(255,123,84,.25);background:rgba(255,123,84,.05);}
+.ws-purple span{color:var(--purple);border-color:rgba(167,139,250,.25);background:rgba(167,139,250,.05);}
+.ws-pink2 span{color:var(--pink);border-color:rgba(244,114,182,.25);background:rgba(244,114,182,.05);}
+
+/* AGENT CARD — full detail */
+.acard{border-radius:11px;border:1.5px solid;overflow:hidden;margin-bottom:0;}
+.acard-head{padding:11px 14px 9px;display:flex;align-items:flex-start;gap:9px;}
+.acard-icon{width:32px;height:32px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0;}
+.acard-badge{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.acard-name{font-size:12px;font-weight:600;color:#fff;}
+.acard-role{font-size:10px;color:var(--dim2);margin-top:1px;}
+.acard-body{border-top:1px solid;padding:10px 14px 12px;display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.acard-col-label{font-family:var(--mono);font-size:7.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin-bottom:5px;}
+.chips{display:flex;flex-wrap:wrap;gap:3px;}
+.chip{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px;border:1px solid;}
+
+/* tool chip = solid colored */
+.tc{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px;border:1px solid;}
+/* skill chip = outlined */
+.sc{font-family:var(--mono);font-size:8px;padding:2px 6px;border-radius:3px;border:1px dashed;}
+
+/* agent colour themes */
+.ac-red{border-color:rgba(248,113,113,.35);background:rgba(248,113,113,.02);}
+.ac-red .acard-icon{background:rgba(248,113,113,.1);} .ac-red .acard-badge{color:var(--red);}
+.ac-red .acard-body{border-color:rgba(248,113,113,.12);}
+.ac-red .tc{background:rgba(248,113,113,.07);color:var(--red);border-color:rgba(248,113,113,.2);}
+.ac-red .sc{color:rgba(248,113,113,.7);border-color:rgba(248,113,113,.25);background:transparent;}
+
+.ac-pink{border-color:rgba(244,114,182,.35);background:rgba(244,114,182,.02);}
+.ac-pink .acard-icon{background:rgba(244,114,182,.1);} .ac-pink .acard-badge{color:var(--pink);}
+.ac-pink .acard-body{border-color:rgba(244,114,182,.12);}
+.ac-pink .tc{background:rgba(244,114,182,.07);color:var(--pink);border-color:rgba(244,114,182,.2);}
+.ac-pink .sc{color:rgba(244,114,182,.7);border-color:rgba(244,114,182,.25);background:transparent;}
+
+.ac-lime{border-color:rgba(190,242,100,.3);background:rgba(190,242,100,.02);}
+.ac-lime .acard-icon{background:rgba(190,242,100,.08);} .ac-lime .acard-badge{color:var(--lime);}
+.ac-lime .acard-body{border-color:rgba(190,242,100,.1);}
+.ac-lime .tc{background:rgba(190,242,100,.07);color:var(--lime);border-color:rgba(190,242,100,.2);}
+.ac-lime .sc{color:rgba(190,242,100,.7);border-color:rgba(190,242,100,.25);background:transparent;}
+
+.ac-cyan{border-color:rgba(56,189,248,.35);background:rgba(56,189,248,.02);}
+.ac-cyan .acard-icon{background:rgba(56,189,248,.1);} .ac-cyan .acard-badge{color:var(--cyan);}
+.ac-cyan .acard-body{border-color:rgba(56,189,248,.12);}
+.ac-cyan .tc{background:rgba(56,189,248,.07);color:var(--cyan);border-color:rgba(56,189,248,.2);}
+.ac-cyan .sc{color:rgba(56,189,248,.7);border-color:rgba(56,189,248,.25);background:transparent;}
+
+.ac-teal{border-color:rgba(52,211,153,.35);background:rgba(52,211,153,.02);}
+.ac-teal .acard-icon{background:rgba(52,211,153,.1);} .ac-teal .acard-badge{color:var(--teal);}
+.ac-teal .acard-body{border-color:rgba(52,211,153,.12);}
+.ac-teal .tc{background:rgba(52,211,153,.07);color:var(--teal);border-color:rgba(52,211,153,.2);}
+.ac-teal .sc{color:rgba(52,211,153,.7);border-color:rgba(52,211,153,.25);background:transparent;}
+
+.ac-yellow{border-color:rgba(251,191,36,.35);background:rgba(251,191,36,.02);}
+.ac-yellow .acard-icon{background:rgba(251,191,36,.1);} .ac-yellow .acard-badge{color:var(--yellow);}
+.ac-yellow .acard-body{border-color:rgba(251,191,36,.12);}
+.ac-yellow .tc{background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.2);}
+.ac-yellow .sc{color:rgba(251,191,36,.7);border-color:rgba(251,191,36,.25);background:transparent;}
+
+.ac-orange{border-color:rgba(255,123,84,.35);background:rgba(255,123,84,.02);}
+.ac-orange .acard-icon{background:rgba(255,123,84,.1);} .ac-orange .acard-badge{color:var(--orange);}
+.ac-orange .acard-body{border-color:rgba(255,123,84,.12);}
+.ac-orange .tc{background:rgba(255,123,84,.07);color:var(--orange);border-color:rgba(255,123,84,.2);}
+.ac-orange .sc{color:rgba(255,123,84,.7);border-color:rgba(255,123,84,.25);background:transparent;}
+
+.ac-purple{border-color:rgba(167,139,250,.35);background:rgba(167,139,250,.02);}
+.ac-purple .acard-icon{background:rgba(167,139,250,.1);} .ac-purple .acard-badge{color:var(--purple);}
+.ac-purple .acard-body{border-color:rgba(167,139,250,.12);}
+.ac-purple .tc{background:rgba(167,139,250,.07);color:var(--purple);border-color:rgba(167,139,250,.2);}
+.ac-purple .sc{color:rgba(167,139,250,.7);border-color:rgba(167,139,250,.25);background:transparent;}
+
+.ac-pink2{border-color:rgba(244,114,182,.35);background:rgba(244,114,182,.02);}
+.ac-pink2 .acard-icon{background:rgba(244,114,182,.1);} .ac-pink2 .acard-badge{color:var(--pink);}
+.ac-pink2 .acard-body{border-color:rgba(244,114,182,.12);}
+.ac-pink2 .tc{background:rgba(244,114,182,.07);color:var(--pink);border-color:rgba(244,114,182,.2);}
+.ac-pink2 .sc{color:rgba(244,114,182,.7);border-color:rgba(244,114,182,.25);background:transparent;}
+
+/* GRID LAYOUTS */
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.g1{display:grid;grid-template-columns:1fr;gap:10px;}
+
+/* LEGEND */
+.chip-legend{display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-bottom:10px;padding:7px 12px;background:var(--surface);border-radius:7px;border:1px solid var(--border);}
+.cl-item{display:flex;align-items:center;gap:6px;font-size:10px;color:var(--dim2);}
+.cl-tc{width:22px;height:13px;border-radius:3px;background:rgba(79,126,255,.1);border:1px solid rgba(79,126,255,.3);}
+.cl-sc{width:22px;height:13px;border-radius:3px;border:1px dashed rgba(79,126,255,.4);}
+
+/* GATE MINI */
+.gm{border-radius:8px;padding:9px 13px;border:1px dashed;}
+.gm-badge{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.gm-title{font-size:11px;font-weight:600;color:#fff;margin-bottom:5px;}
+.gm-btns{display:flex;gap:6px;flex-wrap:wrap;}
+.gmbtn{font-family:var(--mono);font-size:8.5px;padding:3px 9px;border-radius:4px;border:1px solid;font-weight:600;}
+.gm-purple{border-color:rgba(167,139,250,.3);}
+.gm-purple .gm-badge{color:var(--purple);}
+.gm-purple .gmbtn.pass{background:rgba(167,139,250,.08);color:var(--purple);border-color:rgba(167,139,250,.25);}
+.gm-purple .gmbtn.fail{background:rgba(248,113,113,.06);color:var(--red);border-color:rgba(248,113,113,.2);}
+.gm-yellow{border-color:rgba(251,191,36,.3);}
+.gm-yellow .gm-badge{color:var(--yellow);}
+.gm-yellow .gmbtn.pass{background:rgba(251,191,36,.08);color:var(--yellow);border-color:rgba(251,191,36,.25);}
+.gm-yellow .gmbtn.fail{background:rgba(248,113,113,.06);color:var(--red);border-color:rgba(248,113,113,.2);}
+.gm-orch{border-color:rgba(79,126,255,.3);}
+.gm-orch .gm-badge{color:var(--orch);}
+.gm-orch .gmbtn.pass{background:rgba(79,126,255,.08);color:var(--orch);border-color:rgba(79,126,255,.25);}
+.gm-orch .gmbtn.fail{background:rgba(248,113,113,.06);color:var(--red);border-color:rgba(248,113,113,.2);}
+.gm-pink{border-color:rgba(244,114,182,.3);}
+.gm-pink .gm-badge{color:var(--pink);}
+.gm-pink .gmbtn.pass{background:rgba(244,114,182,.08);color:var(--pink);border-color:rgba(244,114,182,.25);}
+.gm-pink .gmbtn.fail{background:rgba(248,113,113,.06);color:var(--red);border-color:rgba(248,113,113,.2);}
+
+/* INNER LOOP */
+.inner-loop{width:100%;border-radius:9px;padding:10px 13px;border:1.5px dashed rgba(248,113,113,.35);background:rgba(248,113,113,.02);position:relative;}
+.inner-loop::before{content:'INNER LOOP · MAX 2 ITERATIONS';position:absolute;top:-9px;left:14px;font-family:var(--mono);font-size:7.5px;letter-spacing:.1em;color:var(--red);background:var(--bg);padding:0 7px;}
+
+/* OUTPUT ROW */
+.output-row{margin-top:12px;padding:10px 14px;border-radius:8px;border:1.5px solid rgba(45,212,167,.35);background:rgba(45,212,167,.03);display:flex;align-items:center;gap:10px;}
+.out-badge{font-family:var(--mono);font-size:8.5px;color:var(--green);text-transform:uppercase;letter-spacing:.08em;margin-bottom:2px;}
+.out-title{font-size:12px;font-weight:600;color:#fff;}
+
+/* FEATURE FLAG */
+.ff-row{margin:10px 0;padding:9px 13px;border-radius:8px;border:1px solid rgba(244,114,182,.28);background:rgba(244,114,182,.03);}
+.ff-badge{font-family:var(--mono);font-size:8px;color:var(--pink);text-transform:uppercase;letter-spacing:.08em;margin-bottom:6px;}
+.ff-steps-row{display:flex;gap:7px;flex-wrap:wrap;}
+.ffs{font-family:var(--mono);font-size:8.5px;padding:2px 8px;border-radius:3px;background:rgba(244,114,182,.07);color:var(--pink);border:1px solid rgba(244,114,182,.2);}
+
+/* LOOP BADGE */
+.loop-badge{display:inline-flex;align-items:center;gap:5px;font-family:var(--mono);font-size:8.5px;padding:3px 9px;border-radius:4px;background:rgba(248,113,113,.06);color:var(--red);border:1px dashed rgba(248,113,113,.28);margin:6px 0 4px;}
+
+/* LEARNING BLOCK */
+.learn-block{width:100%;background:linear-gradient(135deg,#0B1D16,#08120F);border:1.5px solid rgba(52,211,153,.35);border-radius:14px;padding:18px 22px;box-shadow:0 0 30px rgba(52,211,153,.06);}
+.lb-badge{font-family:var(--mono);font-size:9px;letter-spacing:.12em;color:var(--teal);text-transform:uppercase;margin-bottom:4px;}
+.lb-title{font-size:14px;font-weight:600;color:#fff;margin-bottom:5px;}
+.lb-desc{font-size:11px;color:var(--dim2);line-height:1.55;margin-bottom:14px;}
+.lb-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;}
+.lbi{border-radius:8px;padding:10px 12px;border:1px solid;}
+.lbi-1{border-color:rgba(52,211,153,.22);background:rgba(52,211,153,.03);}
+.lbi-2{border-color:rgba(45,212,167,.22);background:rgba(45,212,167,.03);}
+.lbi-3{border-color:rgba(56,189,248,.22);background:rgba(56,189,248,.03);}
+.lbi-4{border-color:rgba(167,139,250,.22);background:rgba(167,139,250,.03);}
+.lbi-num{font-family:var(--mono);font-size:8px;letter-spacing:.08em;text-transform:uppercase;margin-bottom:3px;}
+.lbi-1 .lbi-num{color:var(--teal);}
+.lbi-2 .lbi-num{color:var(--green);}
+.lbi-3 .lbi-num{color:var(--cyan);}
+.lbi-4 .lbi-num{color:var(--purple);}
+.lbi-name{font-size:11px;font-weight:600;color:#fff;margin-bottom:3px;}
+.lbi-desc{font-size:9.5px;color:var(--dim2);line-height:1.4;}
+.lbi-when{font-family:var(--mono);font-size:7.5px;margin-top:5px;padding:2px 6px;border-radius:3px;display:inline-block;}
+.lbi-1 .lbi-when{background:rgba(52,211,153,.08);color:var(--teal);}
+.lbi-2 .lbi-when{background:rgba(45,212,167,.08);color:var(--green);}
+.lbi-3 .lbi-when{background:rgba(56,189,248,.08);color:var(--cyan);}
+.lbi-4 .lbi-when{background:rgba(167,139,250,.08);color:var(--purple);}
+.lb-rule{display:flex;align-items:flex-start;gap:9px;margin-top:12px;background:rgba(255,123,84,.04);border:1px solid rgba(255,123,84,.18);border-radius:7px;padding:9px 12px;}
+.lb-rule-text{font-size:10.5px;color:var(--dim2);line-height:1.5;}
+
+/* FOOTER */
+.loop-footer{width:100%;border-radius:10px;padding:13px 18px;border:1px dashed rgba(45,212,167,.18);background:rgba(45,212,167,.02);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:10px;}
+.lf-label{font-family:var(--mono);font-size:9px;color:var(--teal);letter-spacing:.1em;text-transform:uppercase;}
+.lf-text{font-size:11px;color:var(--dim2);}
+.lf-chips{display:flex;gap:5px;flex-wrap:wrap;}
+.lfc{font-family:var(--mono);font-size:8.5px;padding:2px 8px;border-radius:3px;background:rgba(52,211,153,.06);color:var(--teal);border:1px solid rgba(52,211,153,.18);}
+
+.fa-wrap{width:100%;display:flex;align-items:center;justify-content:center;}
+.fa-line{flex:1;height:2px;max-width:120px;}
+.fa-line-l{background:linear-gradient(90deg,transparent,var(--teal));}
+.fa-line-r{background:linear-gradient(90deg,var(--teal),transparent);}
+.fa-label{font-family:var(--mono);font-size:9px;color:var(--teal);padding:3px 12px;border:1px solid rgba(52,211,153,.28);border-radius:3px;background:rgba(52,211,153,.04);white-space:nowrap;}
+
+/* sync note */
+.sync-note{font-family:var(--mono);font-size:8.5px;color:var(--cyan);text-transform:uppercase;letter-spacing:.06em;padding:7px 12px;border:1px solid rgba(56,189,248,.18);border-radius:6px;background:rgba(56,189,248,.04);margin:10px 0;}
+</style>
+</head>
+<body>
+
+<div class="eyebrow">Full System · Lean Architecture v2</div>
+<h1>Dev Agent System — Complete Overview</h1>
+<p class="sub">4 agents · single-context Phase 0 · merged TDD · CI-as-hooks · Claude Code · Angular · GitHub Actions · Jest + Playwright · Storybook</p>
+
+<div class="stack-strip">
+  <span class="ss ss-orch">Claude Code</span>
+  <span class="ss ss-cyan">Angular + TypeScript</span>
+  <span class="ss ss-teal">Jest + Playwright</span>
+  <span class="ss ss-yellow">ESLint + Prettier</span>
+  <span class="ss ss-pink">GitHub + GitHub Actions</span>
+  <span class="ss ss-purple">Storybook</span>
+</div>
+
+<!-- chip legend -->
+<div class="chip-legend" style="max-width:1020px;width:100%;margin-bottom:28px;">
+  <span style="font-family:var(--mono);font-size:9px;color:var(--dim);text-transform:uppercase;letter-spacing:.08em;">Legend:</span>
+  <div class="cl-item"><div class="cl-tc"></div> Tool (executable)</div>
+  <div class="cl-item"><div class="cl-sc"></div> Skill (knowledge / capability)</div>
+</div>
+
+<div class="canvas">
+
+  <!-- USER -->
+  <div class="user-node">👤 Developer — describes feature idea</div>
+  <div class="sp" style="height:8px;"></div>
+  <div class="conn-row"><div class="conn-lbl">feature brief</div></div>
+  <div class="vc vc-orch" style="height:20px;"></div>
+  <div class="sp" style="height:10px;"></div>
+
+  <!-- ORCHESTRATOR -->
+  <div class="orch-node">
+    <div class="orch-badge">Master Orchestrator · Claude Code</div>
+    <div class="orch-title">Single entry point — routes, dispatches, gates, monitors</div>
+    <div class="orch-desc">Manages full lifecycle. Injects only the <em>relevant</em> Long-term Memory subset (retrieval, not whole-blob) into each agent before dispatch. Enforces human gates and iteration caps. Versioning is plain git — agents commit artifacts; no hand-rolled write-through diff store. Never executes work itself.</div>
+    <div class="orch-row">
+      <span class="orch-pill">intent parsing</span>
+      <span class="orch-pill">LTM retrieval (subset)</span>
+      <span class="orch-pill">stage dispatch</span>
+      <span class="orch-pill">git-versioned artifacts</span>
+      <span class="orch-pill">loop counters</span>
+      <span class="orch-pill">human gate trigger</span>
+      <span class="orch-pill">GitHub Issues integration</span>
+      <span class="orch-pill">risk-tag routing</span>
+    </div>
+  </div>
+
+  <div class="sp" style="height:10px;"></div>
+  <div class="vc vc-orch" style="height:18px;"></div>
+  <div class="sp" style="height:10px;"></div>
+
+  <!-- MEMORY HUB -->
+  <div class="mem-hub">
+    <div class="mh-top">
+      <div class="mh-icon">🧠</div>
+      <div>
+        <div class="mh-badge">Shared Memory Hub · control-plane signals + git artifacts</div>
+        <div class="mh-title">Persistent Context Store</div>
+        <div class="mh-desc">Agents read the real artifacts (SRS.md, code, git diff) — never a summary of a summary. The hub carries control-plane signals only; the durable data lives in files versioned by git.</div>
+      </div>
+    </div>
+    <div class="mh-layers">
+      <div class="mh-layer mhl-wm">
+        <div class="mhl-badge">Working Memory · current feature</div>
+        <div class="mhl-title">Session State</div>
+        <ul class="mhl-items">
+          <li>SRS.md path + confidence scores</li>
+          <li>Code diff / PR URL, test + review verdict</li>
+          <li>Open questions + risk tags</li>
+          <li>TDD loop iteration counter</li>
+        </ul>
+        <span class="mhl-note">🗑 cleared after feature ships</span>
+      </div>
+      <div class="mh-layer mhl-lt">
+        <div class="mhl-badge">Long-term Memory · project knowledge</div>
+        <div class="mhl-title">Persistent Knowledge Base</div>
+        <ul class="mhl-items">
+          <li>ADRs &amp; architectural decisions</li>
+          <li>Extracted patterns (markdown rules, retrieved)</li>
+          <li>Evolved SRS schema versions</li>
+          <li>Angular component conventions</li>
+          <li>Past GitHub Issues + PR history</li>
+          <li>Agent scoring — deferred until 20+ features</li>
+        </ul>
+        <span class="mhl-note">♾ persists across all features</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="sp" style="height:10px;"></div>
+  <div class="vc vc-orch" style="height:18px;"></div>
+  <div class="sp" style="height:10px;"></div>
+
+  <!-- ══════════════ PHASE 0 ══════════════ -->
+  <div class="phase-block p0">
+    <div class="ph-header">
+      <div>
+        <div class="ph-tag">Phase 0 · Discovery &amp; Spec</div>
+        <div class="ph-title">SRS Generation</div>
+        <div class="ph-desc">1 agent, single context → self-critique pass → auto QA + human approval → locked SRS</div>
+      </div>
+      <div class="ph-num">0</div>
+    </div>
+    <div class="ph-body">
+
+      <div class="wave-sep ws-pink"><span>✶ single-context authoring — no blind parallel drafting, no sync round</span></div>
+
+      <div class="g1">
+
+        <!-- SRS AGENT (replaces Planner + Product + Design + sync) -->
+        <div class="acard ac-pink">
+          <div class="acard-head">
+            <div class="acard-icon">📝</div>
+            <div>
+              <div class="acard-badge">01 · SRS Agent</div>
+              <div class="acard-name">SRS Agent</div>
+              <div class="acard-role">Scope → Requirements → UX → Acceptance Criteria, written in one pass with full mutual visibility</div>
+            </div>
+          </div>
+          <div class="acard-body">
+            <div>
+              <div class="acard-col-label">🔧 Tools</div>
+              <div class="chips">
+                <span class="tc">GitHub Issues API</span>
+                <span class="tc">GitHub PR history</span>
+                <span class="tc">Storybook component browser</span>
+                <span class="tc">Claude Code file read/write</span>
+                <span class="tc">Write SRS.md (git-versioned)</span>
+              </div>
+            </div>
+            <div>
+              <div class="acard-col-label">📚 Skills</div>
+              <div class="chips">
+                <span class="sc">Scope &amp; boundary definition</span>
+                <span class="sc">User stories + acceptance criteria</span>
+                <span class="sc">Risk identification + risk tags</span>
+                <span class="sc">UX flow + Angular component mapping</span>
+                <span class="sc">WCAG accessibility</span>
+                <span class="sc">Confidence scoring (HIGH/MED/LOW)</span>
+                <span class="sc">Adversarial self-critique</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- end g1 -->
+
+      <div class="sync-note">✶ Self-critique pass (same context, replaces the sync round) — re-reads the whole SRS for contradictions, untestable AC, orphan requirements; fixes in place. Only undecidable <em>product</em> calls become an OPEN_QUESTION for the human — integration conflicts are eliminated by construction.</div>
+
+      <div class="g2">
+        <div class="gm gm-purple">
+          <div class="gm-badge">Gate 1 · Auto QA</div>
+          <div class="gm-title">Schema + traceability lint (every AC ↔ requirement ↔ flow)</div>
+          <div class="gm-btns"><span class="gmbtn pass">✓ Pass</span><span class="gmbtn fail">✗ Re-run agent</span></div>
+        </div>
+        <div class="gm gm-yellow">
+          <div class="gm-badge">Gate 2 · Human Approval</div>
+          <div class="gm-title">Developer reviews SRS.md — AC surfaced, open questions resolved</div>
+          <div class="gm-btns"><span class="gmbtn pass">✓ Lock SRS</span><span class="gmbtn fail">✗ Revise section</span></div>
+        </div>
+      </div>
+
+      <div class="output-row" style="margin-top:10px;">
+        <span style="font-size:18px;">🔒</span>
+        <div><div class="out-badge">Output</div><div class="out-title">Locked SRS v1.0 — committed to Long-term Memory</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="sp" style="height:10px;"></div>
+  <div class="conn-row"><div class="conn-lbl" style="color:var(--cyan);border-color:rgba(56,189,248,.2);">locked SRS → Phase 1</div></div>
+  <div class="vc vc-orch" style="height:18px;"></div>
+  <div class="sp" style="height:10px;"></div>
+
+  <!-- ══════════════ PHASE 1 ══════════════ -->
+  <div class="phase-block p1">
+    <div class="ph-header">
+      <div>
+        <div class="ph-tag">Phase 1 · Development</div>
+        <div class="ph-title">Stage Execution — 3 stages</div>
+        <div class="ph-desc">Implementation (TDD, one context) → AI Review + CI checks → DevOps (pre · flag · post)</div>
+      </div>
+      <div class="ph-num">1</div>
+    </div>
+    <div class="ph-body">
+
+      <!-- STAGE 1: IMPLEMENTATION (Code + Test merged) -->
+      <div class="wave-sep ws-cyan"><span>🧪 Stage 1 — Implementation Agent · real TDD in one context</span></div>
+      <div class="loop-badge">🔁 red → green → refactor · one agent, no cross-agent handoff · cap on green-retry, escalate to human on cap</div>
+      <div class="inner-loop">
+        <div class="acard ac-cyan" style="border:none;border-radius:8px;">
+          <div class="acard-head">
+            <div class="acard-icon">💻</div>
+            <div>
+              <div class="acard-badge">Stage 1 · Implementation Agent · TDD</div>
+              <div class="acard-name">Implementation Agent</div>
+              <div class="acard-role">Writes failing tests from AC, then Angular code to green — code &amp; tests authored in the same context (replaces Code Agent + Test Agent + their telephone loop)</div>
+            </div>
+          </div>
+          <div class="acard-body">
+            <div>
+              <div class="acard-col-label">🔧 Tools</div>
+              <div class="chips">
+                <span class="tc">Claude Code file system + bash</span>
+                <span class="tc">Angular CLI</span>
+                <span class="tc">Jest + Angular Testing Library</span>
+                <span class="tc">Playwright (E2E)</span>
+                <span class="tc">ng test · coverage (lcov)</span>
+                <span class="tc">npm / package.json</span>
+                <span class="tc">GitHub PR creation</span>
+              </div>
+            </div>
+            <div>
+              <div class="acard-col-label">📚 Skills</div>
+              <div class="chips">
+                <span class="sc">AC → failing test mapping</span>
+                <span class="sc">Angular components + modules</span>
+                <span class="sc">TypeScript + RxJS patterns</span>
+                <span class="sc">REST / HTTP client + mocks</span>
+                <span class="sc">Angular routing</span>
+                <span class="sc">Storybook story writing</span>
+                <span class="sc">Coverage gap + SRS deviation flagging</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STAGE 2: REVIEW -->
+      <div class="wave-sep ws-yellow"><span>🔍 Stage 2 — AI Review · CI checks run as hooks (not an agent)</span></div>
+
+      <!-- DETERMINISTIC CI — demoted from "agent" to hooks -->
+      <div class="ff-row" style="border-color:rgba(251,191,36,.28);background:rgba(251,191,36,.03);">
+        <div class="ff-badge" style="color:var(--yellow);">⚙ Deterministic CI — Stop hook / GitHub Actions, no LLM, no agent</div>
+        <div class="ff-steps-row">
+          <span class="ffs" style="background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.2);">ESLint</span>
+          <span class="ffs" style="background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.2);">Prettier --check</span>
+          <span class="ffs" style="background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.2);">npm audit</span>
+          <span class="ffs" style="background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.2);">ng build --prod</span>
+          <span class="ffs" style="background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.2);">bundle size</span>
+          <span class="ffs" style="background:rgba(251,191,36,.07);color:var(--yellow);border-color:rgba(251,191,36,.2);">Compodoc gen</span>
+        </div>
+      </div>
+
+      <!-- AI REVIEW (single agent; absorbs the doc gloss) -->
+      <div class="g1" style="margin-top:10px;">
+        <div class="acard ac-yellow">
+          <div class="acard-head">
+            <div class="acard-icon">🔍</div>
+            <div>
+              <div class="acard-badge">Stage 2 · AI Review Agent · LLM</div>
+              <div class="acard-name">AI Review Agent</div>
+              <div class="acard-role">Judgment review against SRS + git diff — also writes the PR/changelog gloss over Compodoc-generated docs (no separate Docs Agent)</div>
+            </div>
+          </div>
+          <div class="acard-body">
+            <div>
+              <div class="acard-col-label">🔧 Tools</div>
+              <div class="chips">
+                <span class="tc">GitHub PR diff reader</span>
+                <span class="tc">Claude Code file read</span>
+                <span class="tc">Read SRS.md</span>
+                <span class="tc">GitHub PR comments API</span>
+                <span class="tc">PR description / changelog write</span>
+              </div>
+            </div>
+            <div>
+              <div class="acard-col-label">📚 Skills</div>
+              <div class="chips">
+                <span class="sc">SRS correctness check</span>
+                <span class="sc">Angular best practices</span>
+                <span class="sc">RxJS anti-pattern detection</span>
+                <span class="sc">Memory leak identification</span>
+                <span class="sc">Architecture review</span>
+                <span class="sc">Edge case coverage</span>
+                <span class="sc">PR / changelog gloss writing</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="g2" style="margin-top:10px;">
+        <div class="gm gm-yellow">
+          <div class="gm-badge">Gate · CI + AI verdict</div>
+          <div class="gm-title">CI green AND AI review pass to proceed</div>
+          <div class="gm-btns"><span class="gmbtn pass">✓ Approved</span><span class="gmbtn fail">✗ Changes</span></div>
+        </div>
+        <div class="gm gm-orch">
+          <div class="gm-badge">Human Checkpoint · risk-gated</div>
+          <div class="gm-title">Forced when SRS tagged risk: high — auth · payments · migrations · data deletion</div>
+          <div class="gm-btns"><span class="gmbtn pass">✓ Approve</span><span class="gmbtn fail">✗ Revise</span></div>
+        </div>
+      </div>
+
+      <!-- STAGE 3: DEVOPS (one agent, two phases) -->
+      <div class="wave-sep ws-orange"><span>🚀 Stage 3 — DevOps Agent · one agent, pre → flag → post (phases, not separate agents)</span></div>
+      <div class="g1">
+        <div class="acard ac-orange">
+          <div class="acard-head">
+            <div class="acard-icon">🚀</div>
+            <div>
+              <div class="acard-badge">Stage 3 · DevOps Agent</div>
+              <div class="acard-name">DevOps Agent</div>
+              <div class="acard-role">Phase A pre-deploy checklist · Phase B gradual rollout + health monitoring + auto-rollback — same agent, gate between phases</div>
+            </div>
+          </div>
+          <div class="acard-body">
+            <div>
+              <div class="acard-col-label">🔧 Tools</div>
+              <div class="chips">
+                <span class="tc">GitHub Actions API + dispatch</span>
+                <span class="tc">GitHub Environments + Secrets</span>
+                <span class="tc">DB migration runner</span>
+                <span class="tc">Playwright smoke tests (prod)</span>
+                <span class="tc">Health + error-rate monitor</span>
+                <span class="tc">GitHub Deployments API</span>
+              </div>
+            </div>
+            <div>
+              <div class="acard-col-label">📚 Skills</div>
+              <div class="chips">
+                <span class="sc">CI pipeline + env validation</span>
+                <span class="sc">Migration safety check</span>
+                <span class="sc">Rollback plan + trigger logic</span>
+                <span class="sc">P95 / baseline comparison</span>
+                <span class="sc">Canary metric reading</span>
+                <span class="sc">Incident alert formatting</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PHASE A → human go/no-go → PHASE B -->
+      <div class="gm gm-orch" style="margin-top:10px;">
+        <div class="gm-badge">Gate · Human go / no-go — before any production traffic</div>
+        <div class="gm-title">Pre-deploy checklist green → developer authorizes rollout. Auto-rollback is a safety net, not a substitute for this decision.</div>
+        <div class="gm-btns"><span class="gmbtn pass">✓ Ship it</span><span class="gmbtn fail">✗ Hold</span></div>
+      </div>
+
+      <!-- FEATURE FLAG -->
+      <div class="ff-row" style="margin-top:10px;">
+        <div class="ff-badge">⛳ Phase B · Feature Flag — gradual rollout</div>
+        <div class="ff-steps-row">
+          <span class="ffs">① flag 0% — deploy code dark</span>
+          <span style="color:var(--dim2);font-size:11px;">→</span>
+          <span class="ffs">② canary group — monitor metrics</span>
+          <span style="color:var(--dim2);font-size:11px;">→</span>
+          <span class="ffs">③ 5% → 25% → 100% or auto-rollback</span>
+        </div>
+      </div>
+
+      <div class="gm gm-pink" style="margin-top:10px;">
+        <div class="gm-badge">Gate · Post-deploy health</div>
+        <div class="gm-title">Healthy → ship at 100% · Degraded → auto-rollback + human alert</div>
+        <div class="gm-btns"><span class="gmbtn pass">✅ Healthy</span><span class="gmbtn fail">🔴 Rollback</span></div>
+      </div>
+
+      <div class="output-row" style="margin-top:10px;">
+        <span style="font-size:18px;">✅</span>
+        <div><div class="out-badge">Output</div><div class="out-title">Feature live at 100% — all outputs committed to Long-term Memory</div></div>
+      </div>
+
+    </div>
+  </div>
+
+  <div class="sp" style="height:10px;"></div>
+  <div class="conn-row"><div class="conn-lbl" style="color:var(--teal);border-color:rgba(52,211,153,.2);">feature shipped → triggers learning loop</div></div>
+  <div class="vc vc-teal" style="height:18px;"></div>
+  <div class="sp" style="height:10px;"></div>
+
+  <!-- LEARNING LOOP -->
+  <div class="learn-block">
+    <div class="lb-badge">🔄 Continuous Learning Loop — triggered after every ship</div>
+    <div class="lb-title">System improves with every feature</div>
+    <div class="lb-desc">Retrospective Agent compares SRS intent vs. shipped reality. Findings feed Pattern Extraction → SRS Schema Evolution. Agent Scoring is deferred until sample sizes are meaningful. All learnings go to Long-term Memory — read-only, no auto-prompt changes.</div>
+    <div class="lb-grid">
+      <div class="lbi lbi-1">
+        <div class="lbi-num">Layer 1</div>
+        <div class="lbi-name">🔍 Retrospective</div>
+        <div class="lbi-desc">SRS vs. reality. Criteria accuracy, scope drift, uncovered tests, UX changes.</div>
+        <div class="lbi-when">▶ every feature</div>
+      </div>
+      <div class="lbi lbi-2">
+        <div class="lbi-num">Layer 2</div>
+        <div class="lbi-name">🧩 Pattern Extraction</div>
+        <div class="lbi-desc">Recurring findings → named rules. Injected into next Phase 0 context.</div>
+        <div class="lbi-when">▶ after 3–5 features</div>
+      </div>
+      <div class="lbi lbi-3">
+        <div class="lbi-num">Layer 3</div>
+        <div class="lbi-name">📐 SRS Evolution</div>
+        <div class="lbi-desc">Schema grows based on patterns. Human approves each structural change.</div>
+        <div class="lbi-when">▶ when patterns stable</div>
+      </div>
+      <div class="lbi lbi-4" style="opacity:.55;">
+        <div class="lbi-num">Layer 4 · deferred</div>
+        <div class="lbi-name">📊 Agent Scoring</div>
+        <div class="lbi-desc">Per-agent track record — signal only. Deferred: sample size too small to be meaningful below ~20 features.</div>
+        <div class="lbi-when">▶ deferred · 20+ features</div>
+      </div>
+    </div>
+    <div class="lb-rule">
+      <span style="font-size:14px;flex-shrink:0;">🔐</span>
+      <div class="lb-rule-text"><strong style="color:var(--text);">Hard rule:</strong> No agent self-modifies its own prompt. Learnings go to Long-term Memory as read-only context. Any prompt change requires explicit human review and approval.</div>
+    </div>
+  </div>
+
+  <div class="sp" style="height:14px;"></div>
+
+  <div class="fa-wrap">
+    <div class="fa-line fa-line-l"></div>
+    <div class="fa-label">learnings → Long-term Memory → injected into next feature's context</div>
+    <div class="fa-line fa-line-r"></div>
+  </div>
+  <div class="sp" style="height:10px;"></div>
+
+  <div class="loop-footer">
+    <div class="lf-label">↩ loop closed</div>
+    <div class="lf-text">Every new feature starts smarter — the system compounds over time</div>
+    <div class="lf-chips">
+      <span class="lfc">Angular patterns</span>
+      <span class="lfc">agent scores</span>
+      <span class="lfc">evolved SRS schema</span>
+      <span class="lfc">past ADRs</span>
+      <span class="lfc">GitHub history</span>
+      <span class="lfc">risk register</span>
+    </div>
+  </div>
+
+</div>
+</body>
+</html>
