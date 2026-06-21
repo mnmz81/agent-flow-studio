@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8"/>
 <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-<title>Phase 1A — Code + Test Agents Spec</title>
+<title>Phase 1 · Stage 1 — Implementation Agent Spec (Lean v2)</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
@@ -13,35 +13,27 @@
   --yellow:#FBBF24;--orange:#FF7B54;--purple:#A78BFA;--pink:#F472B6;
   --red:#F87171;--dim:#4E5568;--dim2:#6B7280;--text:#C8CDD8;
   --mono:'IBM Plex Mono',monospace;--sans:'IBM Plex Sans',sans-serif;
-  --code-agent:#38BDF8;--test-agent:#34D399;
+  --impl:#38BDF8;
 }
 body{background:var(--bg);color:var(--text);font-family:var(--sans);padding:36px 20px 80px;display:flex;flex-direction:column;align-items:center;}
 .eyebrow{font-family:var(--mono);font-size:10px;letter-spacing:.22em;color:var(--orch);text-transform:uppercase;text-align:center;margin-bottom:8px;}
 h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:#fff;text-align:center;}
-.sub{margin-top:6px;color:var(--dim2);font-size:12px;text-align:center;margin-bottom:32px;}
+.sub{margin-top:6px;color:var(--dim2);font-size:12px;text-align:center;margin-bottom:24px;}
 
-/* TABS */
-.tabs{display:flex;gap:0;width:100%;max-width:1020px;border-bottom:2px solid var(--border);margin-bottom:0;}
-.tab-btn{font-family:var(--mono);font-size:10px;letter-spacing:.1em;text-transform:uppercase;padding:12px 32px;border:none;background:none;cursor:pointer;color:var(--dim2);border-bottom:2px solid transparent;margin-bottom:-2px;transition:color .15s;display:flex;align-items:center;gap:8px;}
-.tab-btn:hover{color:var(--text);}
-.tab-btn.active{font-weight:600;}
-.tab-btn.t-code.active{border-color:var(--code-agent);color:var(--code-agent);}
-.tab-btn.t-test.active{border-color:var(--test-agent);color:var(--test-agent);}
-.tab-dot{width:8px;height:8px;border-radius:50%;}
-.tab-btn.t-code .tab-dot{background:var(--code-agent);}
-.tab-btn.t-test .tab-dot{background:var(--test-agent);}
+.canvas{width:100%;max-width:1020px;display:flex;flex-direction:column;gap:18px;}
 
-/* PANELS */
-.panel{display:none;width:100%;max-width:1020px;padding-top:24px;}
-.panel.active{display:flex;flex-direction:column;gap:18px;}
+/* v2 BANNER */
+.v2-banner{border-radius:12px;border:1.5px solid rgba(56,189,248,.3);background:linear-gradient(135deg,rgba(56,189,248,.06),rgba(56,189,248,.02));padding:14px 18px;}
+.v2-tag{font-family:var(--mono);font-size:8.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--cyan);margin-bottom:5px;}
+.v2-title{font-size:13px;font-weight:600;color:#fff;margin-bottom:6px;}
+.v2-text{font-size:11px;color:var(--dim2);line-height:1.6;}
+.v2-text strong{color:var(--text);}
+.v2-text del{color:var(--dim);}
 
 /* AGENT HERO */
 .agent-hero{border-radius:14px;padding:20px 26px;border:1.5px solid;}
-.ah-code{border-color:rgba(56,189,248,.4);background:linear-gradient(135deg,rgba(56,189,248,.06),rgba(56,189,248,.02));}
-.ah-test{border-color:rgba(52,211,153,.4);background:linear-gradient(135deg,rgba(52,211,153,.06),rgba(52,211,153,.02));}
-.ah-badge{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;}
-.ah-code .ah-badge{color:var(--cyan);}
-.ah-test .ah-badge{color:var(--teal);}
+.ah-impl{border-color:rgba(56,189,248,.4);background:linear-gradient(135deg,rgba(56,189,248,.06),rgba(56,189,248,.02));}
+.ah-badge{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:5px;color:var(--impl);}
 .ah-name{font-size:18px;font-weight:600;color:#fff;margin-bottom:4px;}
 .ah-role{font-size:12px;color:var(--dim2);margin-bottom:14px;}
 .ah-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
@@ -69,27 +61,8 @@ pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono)
 .ts-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
 .ts-col-label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:8px;}
 .chips{display:flex;flex-wrap:wrap;gap:5px;}
-.tc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px solid;}
-.sc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px dashed;}
-.panel-code .tc{background:rgba(56,189,248,.07);color:var(--cyan);border-color:rgba(56,189,248,.25);}
-.panel-code .sc{color:rgba(56,189,248,.8);border-color:rgba(56,189,248,.3);}
-.panel-test .tc{background:rgba(52,211,153,.07);color:var(--teal);border-color:rgba(52,211,153,.25);}
-.panel-test .sc{color:rgba(52,211,153,.8);border-color:rgba(52,211,153,.3);}
-
-/* SKILL LIST */
-.skill-list{display:flex;flex-direction:column;gap:8px;}
-.skill-item{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:10px 14px;}
-.si-top{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:4px;}
-.si-name{font-size:12px;font-weight:600;color:#fff;}
-.si-status{display:flex;gap:5px;flex-shrink:0;}
-.si-desc{font-size:10.5px;color:var(--dim2);line-height:1.5;}
-.si-file{font-family:var(--mono);font-size:9px;color:var(--cyan);margin-top:5px;}
-.status-badge{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;white-space:nowrap;}
-.s-create{background:rgba(251,191,36,.1);color:var(--yellow);border:1px solid rgba(251,191,36,.25);}
-.s-adapt{background:rgba(56,189,248,.1);color:var(--cyan);border:1px solid rgba(56,189,248,.25);}
-.s-exists{background:rgba(45,212,167,.1);color:var(--green);border:1px solid rgba(45,212,167,.25);}
-.p-must{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.25);}
-.p-should{font-family:var(--mono);font-size:8px;padding:2px 7px;border-radius:3px;background:rgba(255,123,84,.1);color:var(--orange);border:1px solid rgba(255,123,84,.25);}
+.tc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px solid;background:rgba(56,189,248,.07);color:var(--cyan);border-color:rgba(56,189,248,.25);}
+.sc{font-family:var(--mono);font-size:8.5px;padding:3px 8px;border-radius:4px;border:1px dashed;color:rgba(56,189,248,.85);border-color:rgba(56,189,248,.3);}
 
 /* HOOK TABLE */
 .hook-table{width:100%;border-collapse:collapse;font-size:11px;}
@@ -100,6 +73,7 @@ pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono)
 .e-pre{background:rgba(248,113,113,.1);color:var(--red);border:1px solid rgba(248,113,113,.2);}
 .e-post{background:rgba(56,189,248,.1);color:var(--cyan);border:1px solid rgba(56,189,248,.2);}
 .e-stop{background:rgba(45,212,167,.1);color:var(--green);border:1px solid rgba(45,212,167,.2);}
+.e-session{background:rgba(167,139,250,.1);color:var(--purple);border:1px solid rgba(167,139,250,.2);}
 .exit-code{font-family:var(--mono);font-size:8.5px;padding:2px 6px;border-radius:3px;display:inline-block;white-space:nowrap;margin:1px 0;}
 .ec-0{background:rgba(45,212,167,.08);color:var(--green);border:1px solid rgba(45,212,167,.2);}
 .ec-1{background:rgba(251,191,36,.08);color:var(--yellow);border:1px solid rgba(251,191,36,.2);}
@@ -109,11 +83,12 @@ pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono)
 .inner-loop-note{border-radius:8px;padding:10px 14px;border:1.5px dashed rgba(248,113,113,.35);background:rgba(248,113,113,.03);font-size:10.5px;color:var(--dim2);line-height:1.55;margin:8px 0;}
 .inner-loop-note strong{color:var(--red);}
 
-/* OUTPUT SCHEMA */
+/* NOTES */
 .note{border-radius:7px;padding:9px 13px;font-size:10.5px;line-height:1.5;margin:8px 0;}
 .note-warn{background:rgba(255,123,84,.05);border:1px solid rgba(255,123,84,.2);color:var(--orange);}
 .note-info{background:rgba(56,189,248,.05);border:1px solid rgba(56,189,248,.15);color:var(--cyan);}
 .note-teal{background:rgba(52,211,153,.05);border:1px solid rgba(52,211,153,.15);color:var(--teal);}
+.note-green{background:rgba(45,212,167,.05);border:1px solid rgba(45,212,167,.15);color:var(--green);}
 
 .label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:7px;margin-top:13px;display:block;}
 .label:first-child{margin-top:0;}
@@ -122,512 +97,199 @@ pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono)
 </head>
 <body>
 
-<div class="eyebrow">Phase 1A · Wave 1 + Wave 2</div>
-<h1>Code Agent + Test Agent — Full Spec</h1>
-<p class="sub">Implementation · TDD · Inner loop · Skills · Hooks · Output schema</p>
+<div class="eyebrow">Phase 1 · Stage 1 · Lean v2</div>
+<h1>Implementation Agent — real TDD in one context</h1>
+<p class="sub">Red → green → refactor · code &amp; tests authored by the same agent · no cross-agent telephone loop</p>
 
-<div class="tabs">
-  <button class="tab-btn t-code active" onclick="switchTab('code')">
-    <div class="tab-dot"></div>💻 Wave 1 · Code Agent
-  </button>
-  <button class="tab-btn t-test" onclick="switchTab('test')">
-    <div class="tab-dot"></div>🧪 Wave 2 · Test Agent
-  </button>
-</div>
+<div class="canvas">
 
-<!-- ═══════════════════════
-     CODE AGENT
-═══════════════════════ -->
-<div class="panel panel-code active" id="panel-code">
+  <!-- v2 MIGRATION BANNER -->
+  <div class="v2-banner">
+    <div class="v2-tag">What changed in v2 · was Code Agent + Test Agent</div>
+    <div class="v2-title">Code Agent + Test Agent + their inner loop → one Implementation Agent</div>
+    <div class="v2-text">
+      <del>v1 split implementation across a Code Agent and a Test Agent that passed work back and forth through working memory — a "telephone game" capped at 2 iterations, where the tester re-read code it didn't write and the coder re-read failing tests it didn't see fail.</del>
+      <strong>v2 merges them into one Implementation Agent doing genuine TDD: it writes the failing test from the AC, watches it fail, writes the code to green, refactors — all in one context where it can see the test fail and the code pass in the same head.</strong>
+      This removes the handoff serialization, the re-reading cost, and the brittle 2-iteration cap on cross-agent translation. A retry cap still exists on green attempts, but it now escalates a real stuck-state to the human instead of a translation failure.
+    </div>
+  </div>
 
-  <div class="agent-hero ah-code">
-    <div class="ah-badge">Phase 1 · Wave 1 · Code Agent</div>
-    <div class="ah-name">Code Agent</div>
-    <div class="ah-role">Full-stack Angular implementation from locked SRS — components, services, routing, API integration, Storybook stories</div>
+  <!-- HERO -->
+  <div class="agent-hero ah-impl">
+    <div class="ah-badge">Phase 1 · Stage 1 · Implementation Agent · TDD</div>
+    <div class="ah-name">💻 Implementation Agent</div>
+    <div class="ah-role">Writes failing tests from acceptance criteria, then Angular code to green — components, services, routing, API integration, Storybook stories, and the matching Jest + Playwright tests, all in the same context.</div>
     <div class="ah-grid">
       <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Locked SRS v1.0</div></div>
-      <div class="ah-stat"><div class="ah-stat-label">Unblocks</div><div class="ah-stat-val">Test Agent (Wave 2)</div></div>
-      <div class="ah-stat"><div class="ah-stat-label">Inner loop</div><div class="ah-stat-val">May re-run (max 2×)</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Loop</div><div class="ah-stat-val">red→green→refactor · cap on green-retry</div></div>
+      <div class="ah-stat"><div class="ah-stat-label">Unblocks</div><div class="ah-stat-val">Stage 2 (AI Review + CI)</div></div>
     </div>
+  </div>
+
+  <!-- LOOP NOTE -->
+  <div class="inner-loop-note">
+    <strong>⛔ Green-retry cap:</strong> TDD runs in one context — write test, see it fail, write code, see it pass. If a test stays red after a bounded number of green attempts on the same AC, the agent stops and escalates to the human with the failing test, the code, and its hypothesis. There is no second agent to hand off to — the cap guards against thrashing on a genuinely hard or under-specified requirement, not against a translation gap.
   </div>
 
   <!-- SKILL.md -->
   <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/code/SKILL.md</div></div>
+    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/implementation/SKILL.md</div></div>
     <div class="ss-body">
       <div class="code-wrap">
-        <div class="code-header"><span class="code-filename">.claude/agents/code/SKILL.md</span><span class="code-lang">markdown</span></div>
-        <pre><span class="c"># Code Agent — Skill File</span>
+        <div class="code-header"><span class="code-filename">.claude/agents/implementation/SKILL.md</span><span class="code-lang">markdown</span></div>
+        <pre><span class="c"># Implementation Agent — Skill File</span>
 
 <span class="c">## Identity</span>
-You are the <span class="s">Code Agent</span> for a multi-agent Angular dev system.
-You implement features based exclusively on the locked SRS in working memory.
-You do NOT write tests, documentation, or make product decisions.
-You write production-quality Angular code only.
+You are the <span class="s">Implementation Agent</span> for a multi-agent Angular dev system.
+You implement features from the locked SRS using real TDD.
+You write BOTH the tests and the code, in this order, in one context.
+You do NOT write end-user documentation (the AI Review Agent glosses the PR).
 
 <span class="c">## Stack</span>
 - Angular 17+ standalone components (NO NgModules)
-- TypeScript strict mode (no implicit any, no non-null assertions)
-- RxJS with takeUntilDestroyed for subscription management
-- Angular Signals for local component state
-- Angular HttpClient with typed responses
-- Angular Router with lazy-loaded feature routes
-- ESLint + Prettier (run before signalling DONE)
+- TypeScript strict mode · RxJS with takeUntilDestroyed · Signals for local state
+- Jest + Angular Testing Library (unit/integration) · Playwright (E2E)
+- Angular HttpClient (typed) · lazy-loaded feature routes
 
-<span class="c">## Context you receive</span>
-- Locked SRS: user stories, acceptance criteria, UX flows, component map
-- LTM: Angular conventions, past ADRs, recurring patterns
-- Storybook: existing component inventory (read before generating new ones)
+<span class="c">## TDD workflow (per acceptance criterion)</span>
+1. Read the AC from the locked SRS.md
+2. Write the failing test that encodes it (// AC-01: ...)
+3. Run it — confirm it fails for the right reason (red)
+4. Write the minimum Angular code to make it pass (green)
+5. Refactor with the test green
+6. Repeat for the next AC
+Order within a feature: types → services → components (smart→dumb) → routing
+→ Storybook stories. Every new component gets a *.stories.ts.
 
-<span class="c">## Workflow</span>
-1. Read locked SRS from working-memory.json
-2. Read LTM conventions and relevant patterns
-3. Read Storybook stories for components referenced in SRS design section
-4. Implement in this order:
-   a. Types / interfaces first
-   b. Services (HTTP + business logic)
-   c. Components (smart → dumb)
-   d. Routing updates
-   e. Storybook stories for new components
-5. After each file: run ESLint on it (ng lint --files=<path>)
-6. Flag every deviation from SRS as a structured deviation log entry
-7. Signal DONE with structured output block
+<span class="c">## Traceability</span>
+Every test links to an AC by id. Every AC has ≥1 test.
+An AC with no test is a coverage gap — flag it, do not silently skip.
+
+<span class="c">## Deviation flagging</span>
+When the implementation must diverge from the SRS, log it before continuing:
+{"type": "SRS_DEVIATION", "criterionId": "AC-03",
+ "reason": "API returns paginated response, SRS assumed flat array",
+ "impact": "LOW|MED|HIGH"}
 
 <span class="c">## Hard rules</span>
-- NEVER use NgModules — standalone only
-- NEVER use <span class="k">any</span> type — use unknown + type guards if needed
-- NEVER subscribe in constructors — use async pipe or takeUntilDestroyed
-- NEVER write test files — that is Test Agent's job
-- NEVER write README or docs — that is Docs Agent's job
-- Log every SRS deviation BEFORE continuing with implementation
-- Run ESLint after every file write — fix errors before moving on
-- Signal DONE only when all ESLint errors are resolved
-
-<span class="c">## Deviation log format</span>
-{"type": "SRS_DEVIATION", "criterionId": "AC-01",
- "reason": "string", "impact": "LOW|MED|HIGH"}</pre>
+- NEVER write code before its failing test exists (no test → no code)
+- NEVER use NgModules or the `any` type
+- NEVER subscribe without takeUntilDestroyed or async pipe
+- Lint/build are NOT your job to run repeatedly — the Stop hook runs them once
+- Signal DONE only when the suite is green and every AC has a test:
+  {"signal": "DONE", "agent": "implementation", "verdict": "PASS",
+   "prUrl": "...", "coveragePercent": 84,
+   "acCoverage": {"AC-01": true}, "srsDeviations": []}</pre>
       </div>
     </div>
   </div>
 
   <!-- SKILLS -->
   <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">📚</div><div class="ss-badge">Skills</div><div class="ss-title">All skills the Code Agent uses</div></div>
+    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Capabilities</div><div class="ss-title">Tools &amp; Skills</div></div>
     <div class="ss-body">
-      <div class="skill-list">
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">angular-standalone-components</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-must">must</span></div>
+      <div class="ts-grid">
+        <div>
+          <div class="ts-col-label">🔧 Tools (executable)</div>
+          <div class="chips">
+            <span class="tc">Read (docs/srs/feat-*.md) — the locked SRS</span>
+            <span class="tc">Read (LTM slice — injected)</span>
+            <span class="tc">Read (src/**/*.stories.ts)</span>
+            <span class="tc">Write (src/**/*.ts · *.html · *.scss)</span>
+            <span class="tc">Write (src/**/*.spec.ts · e2e/**/*.spec.ts)</span>
+            <span class="tc">Bash (ng test --coverage --watch=false)</span>
+            <span class="tc">Bash (npx playwright test)</span>
+            <span class="tc">Bash (git diff HEAD)</span>
+            <span class="tc">github:create_pull_request</span>
           </div>
-          <div class="si-desc">Generates Angular 17+ standalone components: correct imports array, signal inputs/outputs, OnPush change detection, inject() over constructor injection. Enforces kebab-case naming, feature-folder structure.</div>
-          <div class="si-file">.claude/agents/code/skills/angular-standalone-components.md</div>
         </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">rxjs-patterns</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-must">must</span></div>
+        <div>
+          <div class="ts-col-label">📚 Skills (knowledge)</div>
+          <div class="chips">
+            <span class="sc">AC → failing test mapping</span>
+            <span class="sc">angular-standalone-components</span>
+            <span class="sc">rxjs-patterns</span>
+            <span class="sc">angular-http-client</span>
+            <span class="sc">angular-signals-state</span>
+            <span class="sc">angular-component-testing (ATL)</span>
+            <span class="sc">angular-service-testing (HttpTestingController)</span>
+            <span class="sc">playwright-e2e-patterns</span>
+            <span class="sc">storybook-story-writing</span>
+            <span class="sc">coverage-gap + srs-deviation-flagging</span>
           </div>
-          <div class="si-desc">switchMap vs mergeMap vs concatMap decision guide. takeUntilDestroyed usage. Avoiding nested subscribes. Async pipe preference. Signal interop with toSignal(). Common anti-pattern list with fixes.</div>
-          <div class="si-file">.claude/agents/code/skills/rxjs-patterns.md</div>
         </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">angular-http-client</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-must">must</span></div>
-          </div>
-          <div class="si-desc">Typed HttpClient usage, catchError patterns, retry with exponential backoff, interceptor integration for auth headers and error logging. Service method signatures that match SRS API contracts.</div>
-          <div class="si-file">.claude/agents/code/skills/angular-http-client.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">srs-deviation-flagging</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-must">must</span></div>
-          </div>
-          <div class="si-desc">Structured format for logging implementation deviations from the SRS before continuing. Includes criterionId, reason, and impact level. Written to working memory via write-through proposal.</div>
-          <div class="si-file">.claude/agents/code/skills/srs-deviation-flagging.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">angular-signals-state</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-should">should</span></div>
-          </div>
-          <div class="si-desc">signal(), computed(), effect() usage guide. When to use signals vs BehaviorSubject vs NgRx. LinkedSignal for derived state. Avoiding effect() side-effect anti-patterns.</div>
-          <div class="si-file">.claude/agents/code/skills/angular-signals-state.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">storybook-story-writing</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-should">should</span></div>
-          </div>
-          <div class="si-desc">After generating each new Angular component: writes a *.stories.ts file with default story, loading/error/empty variants, and args matching the component's @Input() API surface.</div>
-          <div class="si-file">.claude/agents/code/skills/storybook-story-writing.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">ltm-pattern-application</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-should">should</span></div>
-          </div>
-          <div class="si-desc">Reads LTM patterns before starting. If LTM says "auth features need session expiry handling" — adds it proactively. Cross-references ADRs to ensure implementation follows past decisions.</div>
-          <div class="si-file">.claude/agents/code/skills/ltm-pattern-application.md</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOOLS -->
-  <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Tools</div><div class="ss-title">Exact tools the Code Agent uses</div></div>
-    <div class="ss-body">
-      <span class="label">Claude Code native</span>
-      <div class="chips">
-        <span class="tc">Read (working-memory.json)</span>
-        <span class="tc">Read (long-term-memory.json)</span>
-        <span class="tc">Read (src/**/*.stories.ts)</span>
-        <span class="tc">Write (src/**/*.ts)</span>
-        <span class="tc">Write (src/**/*.html)</span>
-        <span class="tc">Write (src/**/*.scss)</span>
-        <span class="tc">Bash (ng lint --files=path)</span>
-        <span class="tc">Bash (ng build --prod)</span>
-        <span class="tc">Bash (git diff HEAD)</span>
-      </div>
-      <span class="label">GitHub MCP</span>
-      <div class="chips">
-        <span class="tc">github:create_pull_request</span>
-        <span class="tc">github:update_pull_request</span>
-        <span class="tc">github:get_issue (reads linked SRS ticket)</span>
       </div>
       <div class="note note-warn" style="margin-top:12px;">
-        <strong>Never uses:</strong> Jest / Playwright / ng test — those are Test Agent only. Compodoc / README writes — Docs Agent only. GitHub Actions triggers — DevOps Agent only.
+        <strong>Never uses:</strong> Compodoc / README writes — the AI Review Agent writes the PR/changelog gloss; deep API docs come from Compodoc generation in CI. GitHub Actions triggers — DevOps Agent only.
       </div>
     </div>
   </div>
 
   <!-- HOOKS -->
   <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Code Agent hook behaviour</div></div>
+    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Implementation Agent hook behaviour (lean set)</div></div>
     <div class="ss-body">
+      <div class="note note-info">Inherits the 3 shared hooks. Lint/typecheck/build run <strong>once</strong> at Stop — not per-file via PostToolUse. There is no per-call audit logger writing into working memory; git history + transcript are the trail.</div>
+      <div class="sp" style="height:10px;"></div>
       <table class="hook-table">
         <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
         <tbody>
           <tr>
-            <td><span class="event-badge e-pre">PreToolUse</span></td>
-            <td>Write to <code>*.spec.ts</code> or <code>*.test.ts</code> — blocked</td>
-            <td><span class="exit-code ec-2">2 block</span></td>
-            <td>Code Agent never writes test files. If it tries, it's confused — block and redirect to its SKILL.md constraint.</td>
+            <td><span class="event-badge e-session">SessionStart</span></td>
+            <td>Inject LTM slice (Angular conventions, relevant patterns/ADRs)</td>
+            <td><span class="exit-code ec-0">0</span></td>
+            <td>Retrieval, not whole-blob — context stays small.</td>
           </tr>
           <tr>
             <td><span class="event-badge e-pre">PreToolUse</span></td>
-            <td>Write to <code>*.md</code> or <code>CHANGELOG*</code> — blocked</td>
+            <td>Bash destructive guard (rm -rf, force push, prod mutation) + green-retry cap</td>
             <td><span class="exit-code ec-2">2 block</span></td>
-            <td>Documentation is Docs Agent's job. Blocked to enforce separation.</td>
-          </tr>
-          <tr>
-            <td><span class="event-badge e-pre">PreToolUse</span></td>
-            <td>Bash <code>ng test</code> or <code>jest</code> or <code>playwright</code></td>
-            <td><span class="exit-code ec-2">2 block</span></td>
-            <td>Code Agent does not run tests. Test Agent runs tests in Wave 2.</td>
-          </tr>
-          <tr>
-            <td><span class="event-badge e-post">PostToolUse</span></td>
-            <td>After every <code>Write</code>: auto-run <code>ng lint --files=written_path</code></td>
-            <td><span class="exit-code ec-0">0 async</span></td>
-            <td>Enforces lint-clean code after every file. Lint errors surface immediately, not at review time.</td>
+            <td>Deterministic safety. Cap reads the retry counter and blocks thrashing past the limit, forcing escalation.</td>
           </tr>
           <tr>
             <td><span class="event-badge e-stop">Stop</span></td>
-            <td>Validates: no pending ESLint errors + DONE signal emitted + PR created</td>
+            <td>Runs the CI gate ONCE: ng lint, prettier --check, ng build --prod, full test suite + coverage. Validates DONE signal + PR URL + every AC has a test</td>
             <td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td>
-            <td>Cannot stop with outstanding lint errors or without a PR URL in working memory.</td>
+            <td>One lint/build pass at the end instead of N per-file runs. Cannot stop red, without a PR, or with an uncovered AC.</td>
           </tr>
         </tbody>
       </table>
     </div>
   </div>
 
-  <!-- OUTPUT SCHEMA -->
+  <!-- OUTPUT -->
   <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">📤</div><div class="ss-badge">Output</div><div class="ss-title">What Code Agent writes to working memory</div></div>
+    <div class="ss-header"><div class="ss-icon">📤</div><div class="ss-badge">Output</div><div class="ss-title">Git artifacts + control-plane signal</div></div>
     <div class="ss-body">
+      <div class="note note-green">
+        <strong>The real output is the code + tests on a PR branch</strong> — versioned by git, reviewed via the GitHub diff. The hub gets only a small signal so the Orchestrator can gate Stage 2.
+      </div>
       <div class="code-wrap">
-        <div class="code-header"><span class="code-filename">working-memory.json → waves.wave1-code</span><span class="code-lang">json</span></div>
+        <div class="code-header"><span class="code-filename">working-memory.json → stage1 (control-plane only)</span><span class="code-lang">json</span></div>
         <pre>{
-  <span class="n">"wave1-code"</span>: {
+  <span class="n">"stage1-impl"</span>: {
     <span class="n">"status"</span>: <span class="s">"DONE"</span>,
-    <span class="n">"gateVerdict"</span>: <span class="s">"PASS"</span>,
-    <span class="n">"prUrl"</span>: <span class="s">"https://github.com/org/repo/pull/42"</span>,
-    <span class="n">"filesChanged"</span>: [<span class="s">"src/app/feature/..."</span>],
-    <span class="n">"newComponents"</span>: [
-      {
-        <span class="n">"selector"</span>: <span class="s">"app-feature-card"</span>,
-        <span class="n">"path"</span>: <span class="s">"src/app/feature/feature-card/"</span>,
-        <span class="n">"storybookStory"</span>: <span class="s">"Feature/FeatureCard"</span>
-      }
-    ],
-    <span class="n">"apiContracts"</span>: [
-      {
-        <span class="n">"method"</span>: <span class="s">"GET"</span>,
-        <span class="n">"path"</span>: <span class="s">"/api/feature/:id"</span>,
-        <span class="n">"responseType"</span>: <span class="s">"FeatureDto"</span>
-      }
-    ],
-    <span class="n">"srsDeviations"</span>: [
-      {
-        <span class="n">"type"</span>: <span class="s">"SRS_DEVIATION"</span>,
-        <span class="n">"criterionId"</span>: <span class="s">"AC-03"</span>,
-        <span class="n">"reason"</span>: <span class="s">"API returns paginated response, SRS assumed flat array"</span>,
-        <span class="n">"impact"</span>: <span class="s">"MED"</span>
-      }
-    ],
-    <span class="n">"lintStatus"</span>: <span class="s">"CLEAN"</span>,
-    <span class="n">"completedAt"</span>: <span class="s">"2026-06-20T15:00:00Z"</span>
-  }
-}</pre>
-      </div>
-    </div>
-  </div>
-
-</div>
-
-<!-- ═══════════════════════
-     TEST AGENT
-═══════════════════════ -->
-<div class="panel panel-test" id="panel-test">
-
-  <div class="agent-hero ah-test">
-    <div class="ah-badge">Phase 1 · Wave 2 · Test Agent · TDD</div>
-    <div class="ah-name">Test Agent</div>
-    <div class="ah-role">Writes Jest unit + integration tests and Playwright E2E tests against the real Angular code, mapped directly to SRS acceptance criteria</div>
-    <div class="ah-grid">
-      <div class="ah-stat"><div class="ah-stat-label">Waits for</div><div class="ah-stat-val">Code Agent DONE</div></div>
-      <div class="ah-stat"><div class="ah-stat-label">Inner loop</div><div class="ah-stat-val">FAIL → Code Agent (max 2×)</div></div>
-      <div class="ah-stat"><div class="ah-stat-label">Unblocks</div><div class="ah-stat-val">Wave 3 (Review + Docs)</div></div>
-    </div>
-  </div>
-
-  <!-- INNER LOOP NOTE -->
-  <div class="inner-loop-note">
-    <strong>⛔ Inner loop — max 2 iterations:</strong> If tests FAIL, the Orchestrator sends a targeted fix brief to the Code Agent (specific failing tests, not the whole SRS). Code Agent fixes → Test Agent re-runs. After 2 failed iterations, the Orchestrator escalates to human with the full failure report. The Test Agent never fixes code itself.
-  </div>
-
-  <!-- SKILL.md -->
-  <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/test/SKILL.md</div></div>
-    <div class="ss-body">
-      <div class="code-wrap">
-        <div class="code-header"><span class="code-filename">.claude/agents/test/SKILL.md</span><span class="code-lang">markdown</span></div>
-        <pre><span class="c"># Test Agent — Skill File</span>
-
-<span class="c">## Identity</span>
-You are the <span class="s">Test Agent</span> for a multi-agent Angular dev system.
-You write tests based on the locked SRS acceptance criteria AND the real code.
-You do NOT write application code, docs, or make product decisions.
-Every test must trace back to a specific acceptance criterion ID.
-
-<span class="c">## What you read before starting</span>
-1. Locked SRS: acceptance criteria (Given/When/Then), test plan outline, edge cases
-2. Code Agent output: filesChanged, newComponents, apiContracts, srsDeviations
-3. LTM: test patterns, past coverage failures, Angular testing conventions
-
-<span class="c">## Test writing order</span>
-1. Unit tests for new services (HttpClientTestingModule)
-2. Unit tests for new components (Angular Testing Library)
-3. Integration tests for service + component interaction
-4. E2E tests for full user flows (Playwright, page object model)
-5. Edge case tests (from SRS edgeCases section)
-
-<span class="c">## Traceability rule</span>
-Every test MUST have a comment linking it to an AC:
-  <span class="c">// AC-01: Given user is logged in, when they click submit, then...</span>
-Every AC must have at least one corresponding test.
-Missing AC coverage = coverage gap = flag in output.
-
-<span class="c">## Test conventions</span>
-- Use getByRole / getByLabel selectors (not CSS selectors)
-- Use userEvent over fireEvent (Angular Testing Library)
-- Use fakeAsync + tick for zone.js async operations
-- Playwright: page object model, one file per feature flow
-- Never test implementation details — test behaviour and outcomes
-- Mock HTTP at the HttpTestingController level, not at the service level
-
-<span class="c">## Verdict</span>
-After all tests pass:
-  {"signal": "DONE", "agent": "test", "verdict": "PASS",
-   "coveragePercent": 84, "acCoverage": {"AC-01": true, "AC-02": true}}
-
-After tests fail:
-  {"signal": "DONE", "agent": "test", "verdict": "FAIL",
-   "failingTests": [...], "acGaps": ["AC-03"]}</pre>
-      </div>
-    </div>
-  </div>
-
-  <!-- SKILLS -->
-  <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">📚</div><div class="ss-badge">Skills</div><div class="ss-title">All skills the Test Agent uses</div></div>
-    <div class="ss-body">
-      <div class="skill-list">
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">acceptance-criteria-to-test-mapping</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-must">must</span></div>
-          </div>
-          <div class="si-desc">Reads each Given/When/Then criterion from the SRS and produces a corresponding test. Maintains a traceability matrix: AC-01 → test file + test name. Flags any AC with no test as an explicit coverage gap in the output.</div>
-          <div class="si-file">.claude/agents/test/skills/acceptance-criteria-to-test-mapping.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">angular-component-testing</div>
-            <div class="si-status"><span class="status-badge s-adapt">adapt from engineering:testing-strategy</span><span class="p-must">must</span></div>
-          </div>
-          <div class="si-desc">Jest + Angular Testing Library patterns: renderComponent(), userEvent, fixture.detectChanges(), fakeAsync + tick, async pipe testing. Tests behaviour not implementation. Covers loading, error, and empty states.</div>
-          <div class="si-file">.claude/agents/test/skills/angular-component-testing.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">angular-service-testing</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-must">must</span></div>
-          </div>
-          <div class="si-desc">HttpClientTestingModule + HttpTestingController patterns. expectOne(), flush(), error responses (4xx/5xx), network failures, retry logic testing. Covers all API contracts from Code Agent output.</div>
-          <div class="si-file">.claude/agents/test/skills/angular-service-testing.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">playwright-e2e-patterns</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-must">must</span></div>
-          </div>
-          <div class="si-desc">Page object model structure, getByRole/getByLabel selectors, Angular-specific timing (waitForAngular / zone.js flush), navigation + loading state handling. One page object file per feature screen.</div>
-          <div class="si-file">.claude/agents/test/skills/playwright-e2e-patterns.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">coverage-gap-analysis</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-should">should</span></div>
-          </div>
-          <div class="si-desc">Reads lcov report after test run. Cross-references uncovered branches with SRS edge cases. Produces structured gap report with: file, line range, uncovered AC, suggested test. Passed to Review Agent and Orchestrator.</div>
-          <div class="si-file">.claude/agents/test/skills/coverage-gap-analysis.md</div>
-        </div>
-        <div class="skill-item">
-          <div class="si-top">
-            <div class="si-name">srs-deviation-detection</div>
-            <div class="si-status"><span class="status-badge s-create">create</span><span class="p-should">should</span></div>
-          </div>
-          <div class="si-desc">While writing tests, detects additional SRS deviations not already flagged by the Code Agent — e.g. API response shape doesn't match SRS, component prop names differ from UX spec. Adds them to the deviation log.</div>
-          <div class="si-file">.claude/agents/test/skills/srs-deviation-detection.md</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- TOOLS -->
-  <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">🔧</div><div class="ss-badge">Tools</div><div class="ss-title">Exact tools the Test Agent uses</div></div>
-    <div class="ss-body">
-      <span class="label">Claude Code native</span>
-      <div class="chips">
-        <span class="tc">Read (working-memory.json)</span>
-        <span class="tc">Read (long-term-memory.json)</span>
-        <span class="tc">Read (src/**/*.ts) — reads code to write tests</span>
-        <span class="tc">Write (src/**/*.spec.ts)</span>
-        <span class="tc">Write (e2e/**/*.spec.ts)</span>
-        <span class="tc">Write (e2e/pages/*.ts) — page objects</span>
-        <span class="tc">Bash (ng test --coverage --watch=false)</span>
-        <span class="tc">Bash (npx playwright test)</span>
-        <span class="tc">Bash (cat coverage/lcov.info)</span>
-      </div>
-      <div class="note note-warn" style="margin-top:12px;">
-        <strong>Never uses:</strong> Write to src/**/*.ts (application code) — Code Agent only. ng build, ng serve — DevOps Agent only. GitHub PR creation — Code Agent already opened the PR, Test Agent adds test results as a PR comment only.
-      </div>
-    </div>
-  </div>
-
-  <!-- HOOKS -->
-  <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">⚡</div><div class="ss-badge">Hooks</div><div class="ss-title">Test Agent hook behaviour</div></div>
-    <div class="ss-body">
-      <table class="hook-table">
-        <thead><tr><th>Event</th><th>Behaviour</th><th>Exit</th><th>Reason</th></tr></thead>
-        <tbody>
-          <tr>
-            <td><span class="event-badge e-pre">PreToolUse</span></td>
-            <td>Write to <code>src/**/*.ts</code> (non-spec files) — blocked</td>
-            <td><span class="exit-code ec-2">2 block</span></td>
-            <td>Test Agent only writes *.spec.ts and e2e files. It never modifies application code — that's Code Agent in the inner loop.</td>
-          </tr>
-          <tr>
-            <td><span class="event-badge e-pre">PreToolUse</span></td>
-            <td>Bash <code>ng lint</code> or <code>ng build</code> — blocked</td>
-            <td><span class="exit-code ec-2">2 block</span></td>
-            <td>Test Agent's only bash calls are test runners. Lint is Code Agent's job, build is DevOps Agent's job.</td>
-          </tr>
-          <tr>
-            <td><span class="event-badge e-post">PostToolUse</span></td>
-            <td>After <code>ng test</code>: parse coverage report, update working memory with coveragePercent</td>
-            <td><span class="exit-code ec-0">0 async</span></td>
-            <td>Coverage data is written to working memory immediately after test run so the Review Gate can access it without re-running tests.</td>
-          </tr>
-          <tr>
-            <td><span class="event-badge e-post">PostToolUse</span></td>
-            <td>After <code>playwright test</code>: parse results, update working memory with E2E verdict + failing test names</td>
-            <td><span class="exit-code ec-0">0 async</span></td>
-            <td>Structured E2E results in working memory — not just pass/fail but specific failing scenarios for the inner loop brief.</td>
-          </tr>
-          <tr>
-            <td><span class="event-badge e-stop">Stop</span></td>
-            <td>Validates: verdict signal emitted + AC coverage matrix complete + no unchecked ACs</td>
-            <td><span class="exit-code ec-0">0</span> / <span class="exit-code ec-2">2</span></td>
-            <td>Cannot stop without a verdict. If any AC from the SRS has no corresponding test entry — force continue until either a test is written or a gap is explicitly flagged.</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-  </div>
-
-  <!-- OUTPUT SCHEMA -->
-  <div class="spec-section">
-    <div class="ss-header"><div class="ss-icon">📤</div><div class="ss-badge">Output</div><div class="ss-title">What Test Agent writes to working memory</div></div>
-    <div class="ss-body">
-      <div class="code-wrap">
-        <div class="code-header"><span class="code-filename">working-memory.json → waves.wave2-test</span><span class="code-lang">json</span></div>
-        <pre>{
-  <span class="n">"wave2-test"</span>: {
-    <span class="n">"status"</span>: <span class="s">"DONE"</span>,
-    <span class="n">"gateVerdict"</span>: <span class="s">"PASS"</span>,
     <span class="n">"verdict"</span>: <span class="s">"PASS"</span>,
+    <span class="n">"prUrl"</span>: <span class="s">"https://github.com/org/repo/pull/42"</span>,
     <span class="n">"coveragePercent"</span>: <span class="v">84</span>,
-    <span class="n">"coverageByFile"</span>: {
-      <span class="n">"feature.service.ts"</span>: <span class="v">92</span>,
-      <span class="n">"feature-card.component.ts"</span>: <span class="v">78</span>
-    },
     <span class="n">"acCoverage"</span>: {
-      <span class="n">"AC-01"</span>: { <span class="n">"covered"</span>: <span class="k">true</span>, <span class="n">"testFile"</span>: <span class="s">"feature.service.spec.ts"</span>, <span class="n">"testName"</span>: <span class="s">"should load feature on init"</span> },
-      <span class="n">"AC-02"</span>: { <span class="n">"covered"</span>: <span class="k">true</span>, <span class="n">"testFile"</span>: <span class="s">"feature-card.component.spec.ts"</span>, <span class="n">"testName"</span>: <span class="s">"should show error state on 404"</span> },
-      <span class="n">"AC-03"</span>: { <span class="n">"covered"</span>: <span class="k">false</span>, <span class="n">"gap"</span>: <span class="s">"pagination not testable — SRS deviation from Code Agent"</span> }
+      <span class="n">"AC-01"</span>: { <span class="n">"covered"</span>: <span class="k">true</span>, <span class="n">"test"</span>: <span class="s">"feature.service.spec.ts › loads on init"</span> },
+      <span class="n">"AC-03"</span>: { <span class="n">"covered"</span>: <span class="k">false</span>, <span class="n">"gap"</span>: <span class="s">"pagination — SRS deviation, see below"</span> }
     },
-    <span class="n">"e2eVerdict"</span>: <span class="s">"PASS"</span>,
-    <span class="n">"e2eFlowsCovered"</span>: [<span class="s">"FLOW-01"</span>, <span class="s">"FLOW-02"</span>],
-    <span class="n">"coverageGaps"</span>: [],
-    <span class="n">"additionalDeviations"</span>: [],
-    <span class="n">"iterationCount"</span>: <span class="v">1</span>,
-    <span class="n">"completedAt"</span>: <span class="s">"2026-06-20T16:30:00Z"</span>
+    <span class="n">"srsDeviations"</span>: [
+      { <span class="n">"criterionId"</span>: <span class="s">"AC-03"</span>, <span class="n">"reason"</span>: <span class="s">"API paginated, SRS assumed flat"</span>, <span class="n">"impact"</span>: <span class="s">"MED"</span> }
+    ],
+    <span class="n">"greenRetries"</span>: <span class="v">1</span>,
+    <span class="n">"ciGate"</span>: { <span class="n">"lint"</span>: <span class="s">"CLEAN"</span>, <span class="n">"build"</span>: <span class="s">"PASS"</span> }
   }
 }</pre>
       </div>
       <div class="note note-teal" style="margin-top:10px;">
-        <strong>On FAIL verdict:</strong> <code>gateVerdict: "FAIL"</code>, <code>failingTests: [...]</code>, <code>acGaps: ["AC-03"]</code>. The Orchestrator reads this and builds a targeted fix brief for the Code Agent — only the specific failing tests and gaps, not the whole SRS.
+        <strong>On a stuck AC:</strong> <code>verdict: "ESCALATE"</code>, with the failing test, the code under test, and the agent's hypothesis. The Orchestrator surfaces it to the human — it does not silently retry past the cap.
       </div>
     </div>
   </div>
 
 </div>
-
-<script>
-function switchTab(name){
-  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.remove('active'));
-  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
-  document.querySelector('.tab-btn.t-'+name).classList.add('active');
-  document.getElementById('panel-'+name).classList.add('active');
-}
-</script>
 </body>
 </html>
