@@ -127,6 +127,36 @@ pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono)
 .label{font-family:var(--mono);font-size:8.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim2);margin-bottom:7px;margin-top:13px;display:block;}
 .label:first-child{margin-top:0;}
 .sp{display:block;}
+
+/* ════ readability + plain-language layer (overrides above) ════ */
+:root{--text:#DBDFE8;--dim2:#9CA6B5;--dim:#717A8A;}
+.sub{font-size:13.5px;line-height:1.6;}
+.ss-body{padding:18px 20px;}
+.ah-role{font-size:12.5px;line-height:1.6;}
+.hook-table td,.note,.inner-loop-note,.ff-text{font-size:12px;line-height:1.6;}
+pre{font-size:11.5px;line-height:1.85;}
+.ss-title,.ah-name{font-size:15px;}
+.tc,.sc,.ci-chip{font-size:9.5px;}
+.plain{background:rgba(79,126,255,.07);border-left:3px solid var(--orch);border-radius:7px;padding:12px 16px;margin:2px 0 4px;font-size:13.5px;line-height:1.75;color:#DEE2EB;}
+.plain b{color:#fff;font-weight:600;}
+.plain .lead{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--orch);display:block;margin-bottom:6px;}
+
+/* ════════ LIGHT THEME — final override for readability ════════ */
+:root{
+  --bg:#FFFFFF;--surface:#F5F7FA;--surface2:#ECEFF4;--border:#D7DCE5;
+  --text:#1E2530;--dim2:#525C6B;--dim:#7A8390;
+  --orch:#2F5BD8;--cyan:#0F7CB5;--teal:#0E9D72;--green:#0E9D72;
+  --yellow:#A86A00;--orange:#C24A1C;--purple:#6A45CF;--pink:#BE2596;
+  --red:#CE3434;--lime:#5C8A00;
+}
+body{background:var(--bg);color:var(--text);}
+h1,.sec-title,.ss-title,.ah-name,.si-name,.skill-name,.ab-name,.gm-title,.out-title{color:#151A23;}
+.plain{background:rgba(47,91,216,.06);color:#232b37;border-left-color:var(--orch);}
+.plain b{color:#0c1733;}
+pre{background:#0E121A;}
+.code-header{background:#161B25;border-bottom-color:#262d39;}
+.code-filename{color:#56C0F0;}
+.code-lang{color:#7A8494;}
 </style>
 </head>
 <body>
@@ -154,6 +184,11 @@ pre{background:#070910;padding:13px 15px;overflow-x:auto;font-family:var(--mono)
       <div class="ah-stat"><div class="ah-stat-label">Writes</div><div class="ah-stat-val">docs/srs/feat-*.md (git)</div></div>
       <div class="ah-stat"><div class="ah-stat-label">Signals</div><div class="ah-stat-val">SRS_READY → hub</div></div>
     </div>
+  </div>
+
+  <div class="plain">
+    <span class="lead">In plain words</span>
+    This one agent does the whole spec by itself. Instead of three agents drafting separately and then arguing, it writes the scope, the screens, and the test criteria together in one go — then re-reads its own draft to catch contradictions and fix them. You only get pulled in for genuine product decisions it can't make on its own.
   </div>
 
   <div class="spec-section">
@@ -264,6 +299,11 @@ contradiction / orphan requirement? Fix in place. Then emit SRS_READY.
     </div>
   </div>
 
+  <div class="plain">
+    <span class="lead">In plain words</span>
+    One agent writes a test that fails, then writes just enough Angular code to make it pass, then tidies up — over and over. Because the <b>same</b> agent sees the test fail and the code pass, there's no handoff between a separate "coder" and "tester" who keep re-reading each other's work. If it gets genuinely stuck on a requirement, it stops and asks you instead of looping forever.
+  </div>
+
   <div class="inner-loop-note">
     <strong>⛔ Green-retry cap:</strong> TDD runs in one context — write test, see it fail, write code, see it pass. If a test stays red after a bounded number of green attempts on the same AC, the agent stops and escalates to the human with the failing test, the code, and its hypothesis. No second agent to hand off to — the cap guards against thrashing on a genuinely hard or under-specified requirement.
   </div>
@@ -371,6 +411,11 @@ Diverge from the SRS? Log before continuing:
     </div>
   </div>
 
+  <div class="plain">
+    <span class="lead">In plain words</span>
+    The boring checks — formatting, build, security scan — are done by automation, not this agent. This agent does the part a machine can't: "is this actually correct, and is the Angular written well?" It leaves comments on the pull request and also writes the human-readable summary and changelog so a person can understand what shipped.
+  </div>
+
   <div class="spec-section">
     <div class="ss-header"><div class="ss-icon">📋</div><div class="ss-badge">File</div><div class="ss-title">.claude/agents/ai-review/SKILL.md</div></div>
     <div class="ss-body">
@@ -451,6 +496,10 @@ Architecture  — logic in services not components; layer boundaries; no cycles
 
 <!-- ═══════ CI AS HOOKS ═══════ -->
 <div class="panel panel-ci" id="panel-ci">
+  <div class="plain">
+    <span class="lead">In plain words</span>
+    These checks always give the same answer, so there's no reason to pay an AI to run them. They run as a normal build step — quickly on the developer's machine (a "hook"), and authoritatively on the pull request (GitHub Actions). The system just reads the green/red result. This is the thing that used to be a whole "Automated Review Agent" and isn't anymore.
+  </div>
   <div class="spec-section">
     <div class="ss-header"><div class="ss-icon">⚙</div><div class="ss-badge">Stage 2A · No LLM, no agent</div><div class="ss-title">Deterministic CI — Stop hook + GitHub Actions</div></div>
     <div class="ss-body">
@@ -498,6 +547,11 @@ Architecture  — logic in services not components; layer boundaries; no cycles
       <div class="ah-stat"><div class="ah-stat-label">Gate between phases</div><div class="ah-stat-val">Human go / no-go</div></div>
       <div class="ah-stat"><div class="ah-stat-label">Verdict</div><div class="ah-stat-val">READY → HEALTHY / DEGRADED</div></div>
     </div>
+  </div>
+
+  <div class="plain">
+    <span class="lead">In plain words</span>
+    First it checks everything is safe to ship and writes the release plan as configuration. Then it waits for your explicit go-ahead — nothing reaches real users without it. Only then does it release the feature gradually (5% of users → 25% → everyone), and if anything looks unhealthy the deployment pipeline rolls it back automatically. The agent <b>sets it up</b>; the deployment system <b>runs it</b> — the AI isn't steering live traffic itself.
   </div>
 
   <div class="spec-section">

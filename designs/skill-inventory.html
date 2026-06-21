@@ -101,6 +101,32 @@ h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:
 .sum-stat.s-orch .sum-num{color:var(--orch);}
 
 .sp{display:block;}
+
+/* ════ readability + plain-language layer (overrides above) ════ */
+:root{--text:#DBDFE8;--dim2:#9CA6B5;--dim:#717A8A;}
+.sub{font-size:13.5px;line-height:1.6;}
+.ab-role,.ci-note-text{font-size:12.5px;line-height:1.6;}
+.skill-desc{font-size:12px;line-height:1.6;}
+.skill-table td{padding:11px 13px;}
+.skill-name{font-size:12.5px;}
+.ab-name{font-size:15px;}
+.plain{background:rgba(79,126,255,.07);border-left:3px solid var(--orch);border-radius:7px;padding:12px 16px;margin:2px 0 4px;font-size:13.5px;line-height:1.75;color:#DEE2EB;}
+.plain b{color:#fff;font-weight:600;}
+.plain .lead{font-family:var(--mono);font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--orch);display:block;margin-bottom:6px;}
+
+/* ════════ LIGHT THEME — final override for readability ════════ */
+:root{
+  --bg:#FFFFFF;--surface:#F5F7FA;--surface2:#ECEFF4;--border:#D7DCE5;
+  --text:#1E2530;--dim2:#525C6B;--dim:#7A8390;
+  --orch:#2F5BD8;--cyan:#0F7CB5;--teal:#0E9D72;--green:#0E9D72;
+  --yellow:#A86A00;--orange:#C24A1C;--purple:#6A45CF;--pink:#BE2596;
+  --red:#CE3434;--lime:#5C8A00;
+}
+body{background:var(--bg);color:var(--text);}
+h1,.skill-name,.ab-name,.ci-note-title{color:#151A23;}
+.sum-num{color:#151A23;}
+.plain{background:rgba(47,91,216,.06);color:#232b37;border-left-color:var(--orch);}
+.plain b{color:#0c1733;}
 </style>
 </head>
 <body>
@@ -127,6 +153,13 @@ h1{font-size:clamp(18px,2.4vw,26px);font-weight:600;letter-spacing:-.02em;color:
   <div class="sum-stat s-green"><div class="sum-num">5</div><div class="sum-label">Adapt from engineering</div></div>
   <div class="sum-stat s-yellow"><div class="sum-num">20</div><div class="sum-label">Skills to create</div></div>
   <div class="sum-stat s-cyan"><div class="sum-num">0</div><div class="sum-label">Sync/conflict skills</div></div>
+</div>
+
+<div class="plain" style="max-width:1020px;width:100%;margin-bottom:22px;">
+  <span class="lead">In plain words — how to read this page</span>
+  This is the <b>build checklist</b>: every skill (a piece of know-how) each agent needs to do its job, grouped by agent.
+  Each row tells you whether that skill <b>already exists</b> (green), needs a bit of <b>adapting</b> from an existing one (blue), or must be <b>written from scratch</b> (yellow), plus how important it is (must / should / nice).
+  Read it as a to-do list: these are the pieces you'd actually create when implementing the system.
 </div>
 
 <div class="canvas">
