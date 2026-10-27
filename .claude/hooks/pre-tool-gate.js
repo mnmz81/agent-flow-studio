@@ -50,7 +50,8 @@ const WRITE_SCOPES = {
 };
 
 // 1c. Per-agent Bash allowlists: every command segment must start with one of these prefixes.
-const READ_ONLY = ['git status', 'git log', 'git diff', 'git show', 'cat', 'ls', 'head', 'tail', 'grep', 'wc', 'sort', 'uniq', 'jq'];
+// No uniq: its second operand is an output file.
+const READ_ONLY = ['git status', 'git log', 'git diff', 'git show', 'cat', 'ls', 'head', 'tail', 'grep', 'wc', 'sort', 'jq'];
 const GIT_WRITE = ['git add', 'git commit', 'git push', 'git switch', 'git checkout -b'];
 const NG = ['test', 'build', 'lint', 'generate'].flatMap((c) => [`ng ${c}`, `npx ng ${c}`]);
 const BASH_ALLOW = {
@@ -67,7 +68,11 @@ const BASH_ALLOW = {
 // Production traffic needs Gate 1-GoNoGo: the Orchestrator sets stage3.goNoGo = "APPROVED" only after the human says go
 const NEEDS_GO = ['gh pr merge', 'gh workflow run'];
 // gh api may only read: no non-GET method, no request fields/body
-const GH_API_WRITE = /\s(?:-X\s*|--method[\s=]+)(?!GET\b)\w|\s(?:-f|-F|--field|--raw-field|--input)(?:[\s=]|$)/;
+// gh api is read-only: GET is the default, so any method, field, body or header flag (attached or in a
+// short-flag cluster like -iX) is refused, and so is graphql (mutations).
+const GH_API_WRITE = /(?:^|\s)['"]?(?:-[a-zA-Z]*[fFXH]|--(?:field|raw-field|input|header|method))|^gh api\s+graphql\b/;
+// Options that make an allowed command write a file (sort -o, git --output, jest --outputFile, …)
+const WRITES_FILE = /\s--output(?:[-_]?(?:file|dir|directory))?(?:[\s=]|$)|^sort\b.*\s-[a-zA-Z]*o/i;
 
 // Split on unquoted ; & | and newlines. Returns null when the command uses command or process
 // substitution or a file redirection, which could hide another command or write outside the write scope.
@@ -80,7 +85,7 @@ function segments(command) {
     const c = s[i];
     if (quote === "'") { if (c === "'") quote = null; cur += c; continue; }
     if (c === '\\') { cur += c + (s[i + 1] ?? ''); i++; continue; }
-    if (c === '`' || (c === '$' && s[i + 1] === '(')) return null; // runs even inside "..."
+    if (c === '`' || (c === '$' && '({'.includes(s[i + 1]))) return null; // expands even inside "..."
     if (quote === '"') { if (c === '"') quote = null; cur += c; continue; }
     if (c === "'" || c === '"') { quote = c; cur += c; continue; }
     if (c === '<' || c === '>') return null;
@@ -88,7 +93,9 @@ function segments(command) {
     cur += c;
   }
   out.push(cur);
-  return out.map((x) => x.trim().replace(/^(\w+=\S*\s+)+/, '')).filter(Boolean); // drop leading VAR=value
+  // Only harmless env prefixes are dropped; any other VAR=… (NODE_OPTIONS, GIT_*, PAGER) leaves the segment
+  // unmatched by the allowlist, so it is refused.
+  return out.map((x) => x.trim().replace(/^((?:CI|FORCE_COLOR|NO_COLOR)=\S*\s+)+/, '')).filter(Boolean);
 }
 
 const agentType = input.agent_type;
@@ -103,7 +110,8 @@ try {
 const allow = isSubAgent && tool === 'Bash' ? BASH_ALLOW[agentType] : null;
 if (allow) {
   const segs = segments(cmd);
-  if (!segs) block('use no $(...), backticks or < > redirection; write files with the Write tool.');
+  if (!segs) block('use no $(...), ${...}, backticks or < > redirection; write files with the Write tool.');
+  if (/\.claude|claude\.md/i.test(cmd)) block('agents may not touch the harness (.claude/, CLAUDE.md) from Bash.');
   const starts = (seg, prefixes) => prefixes.some((p) => seg === p || seg.startsWith(p + ' '));
   for (const seg of segs) {
     if (!starts(seg, allow)) block(`${agentType} may not run "${seg.slice(0, 60)}". Allowed: ${allow.join(', ')}`);
@@ -111,6 +119,7 @@ if (allow) {
       block('production traffic needs the human go/no-go (stage3.goNoGo = APPROVED). Stop and emit READY.');
     }
     if (starts(seg, ['gh api']) && GH_API_WRITE.test(seg)) block('gh api is read-only for agents.');
+    if (WRITES_FILE.test(seg)) block('no file-writing options in Bash; write files with the Write tool.');
   }
 }
 if (isSubAgent && ['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool) && filePath) {

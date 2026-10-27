@@ -124,6 +124,24 @@ sh_ 0 devops-agent 'gh api repos/o/r/commits/abc/check-runs'
 sh_ 2 devops-agent 'gh api -X DELETE repos/o/r'
 sh_ 2 devops-agent 'gh api repos/o/r/dispatches -f event_type=deploy'
 sh_ 0 Explore 'curl -s https://example.com'
+# allowlist bypasses: file-writing options, harness paths, gh api write forms, env injection
+sh_ 2 srs-agent 'sort -o /tmp/x a.txt'
+sh_ 2 srs-agent 'uniq a.txt b.txt'
+sh_ 2 srs-agent 'git diff --output=/tmp/x'
+sh_ 0 srs-agent 'git log --oneline | grep -o "AC-[0-9]*"'
+sh_ 2 implementation-agent 'ng generate component x --path=.claude/hooks'
+sh_ 2 implementation-agent 'npx jest --outputFile=.Claude/x.json'
+sh_ 2 devops-agent 'gh api repos/o/r/dispatches -fevent_type=deploy'
+sh_ 2 devops-agent 'gh api -XPOST repos/o/r/dispatches'
+sh_ 2 devops-agent 'gh api --method=POST repos/o/r/dispatches'
+sh_ 2 devops-agent 'gh api -iX POST repos/o/r/dispatches'
+sh_ 2 devops-agent "gh api -H 'X-HTTP-Method-Override: DELETE' repos/o/r"
+sh_ 2 devops-agent 'gh api graphql -q .data'
+sh_ 0 devops-agent "gh api repos/o/r/pulls --paginate --jq '.[].number'"
+sh_ 2 implementation-agent 'NODE_OPTIONS=--require=./x.js npm test'
+sh_ 2 srs-agent 'GIT_EXTERNAL_DIFF=sh git diff'
+sh_ 0 implementation-agent 'CI=true FORCE_COLOR=0 npm test'
+sh_ 2 srs-agent 'git log ${HOME}'
 expect 0 pre-tool-gate.js "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$PWD/.claude/agents/srs/SKILL.md\"}}" 'Orchestrator/human may edit the harness'
 
 # Destructive-command bypasses (issue #2); built at runtime so this file holds no literal

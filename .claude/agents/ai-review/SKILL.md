@@ -89,7 +89,7 @@ Verdict values: `APPROVED` (no MUST_FIX findings) | `CHANGES_REQUESTED` (has MUS
 
 ## Tool Guidance
 
-Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-tool-gate.js` enforces the limits below. A blocked call returns `[gate] ...`: read it, do not retry the same call, change the approach or report it in your signal. Every agent may also run the read-only `git status`, `git log`, `git diff`, `git show`, `cat`, `ls`, `head`, `tail`, `grep`, `wc`, `sort`, `uniq`, `jq`, including in pipes.
+Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-tool-gate.js` enforces the limits below. A blocked call returns `[gate] ...`: read it, do not retry the same call, change the approach or report it in your signal. Every agent may also run the read-only `git status`, `git log`, `git diff`, `git show`, `cat`, `ls`, `head`, `tail`, `grep`, `wc`, `sort`, `jq`, including in pipes (no output-file options such as `--output` or `sort -o`).
 
 - **Bash, read the PR** — `gh pr view <n> --json files,body,headRefName`, `gh pr diff <n>`, `gh pr checks <n>` (CI results: read them, never re-run checks), `git diff`, `git log`.
 - **Read / Grep / Glob** — read the SRS and the code around each changed hunk. Never edit source.
