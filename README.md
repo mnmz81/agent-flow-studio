@@ -24,6 +24,7 @@ Feature Brief → SRS Agent → [Auto QA] → [Human Approval] → Implementatio
 
 ## Getting Started
 
+0. Enable the secret-blocking pre-commit hook (once per clone): `git config core.hooksPath .githooks`
 1. Read the design specs: `python3 -m http.server 8731` → open `http://localhost:8731/designs/full-system-unified.html`
 2. Review agent definitions in `.claude/agents/`
 3. Start a feature by providing a feature brief — the Orchestrator (CLAUDE.md) routes it through the pipeline
