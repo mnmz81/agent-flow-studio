@@ -3,7 +3,11 @@
     "SessionStart": [
       {
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\"", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\"",
+            "timeout": 10
+          }
         ]
       }
     ],
@@ -11,7 +15,11 @@
       {
         "matcher": "^(srs-agent|implementation-agent|ai-review-agent|devops-agent)$",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\"", "timeout": 10 }
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\"",
+            "timeout": 10
+          }
         ]
       }
     ],
@@ -19,14 +27,23 @@
       {
         "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-tool-gate.js\"", "timeout": 5 }
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/pre-tool-gate.js\"",
+            "timeout": 5
+          }
         ]
       }
     ],
-    "Stop": [
+    "SubagentStop": [
       {
+        "matcher": "^(srs-agent|implementation-agent|ai-review-agent|devops-agent)$",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-gate.js\"", "timeout": 120 }
+          {
+            "type": "command",
+            "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/stop-gate.js\"",
+            "timeout": 600
+          }
         ]
       }
     ]

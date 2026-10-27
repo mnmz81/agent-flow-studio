@@ -77,9 +77,12 @@ After checklist: emit `READY` signal and STOP. Wait for human go/no-go gate.
     "migrations": "PASS",
     "rollback": "PASS",
     "featureFlag": "PASS"
-  }
+  },
+  "blockers": []
 }
 ```
+
+`blockers` lists what a human must fix; required (non-empty) when the verdict is `BLOCKED`.
 
 ### Phase B Signal
 ```json
@@ -93,7 +96,7 @@ After checklist: emit `READY` signal and STOP. Wait for human go/no-go gate.
 }
 ```
 
-Verdict values: `HEALTHY` (100% with metrics clean) | `DEGRADED` (breach triggered rollback)
+Verdict values: `HEALTHY` (100% with metrics clean) | `DEGRADED` (breach triggered rollback; add `"incidentUrl"` of the incident Issue)
 
 ## Hard Rules
 

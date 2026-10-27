@@ -31,7 +31,7 @@ Durable data (SRS docs, source code, configs) lives in git-versioned files — n
 
 ### Phase 0 — SRS Generation
 1. Dispatch **SRS Agent** (`.claude/agents/srs/SKILL.md`) with feature brief + LTM slice
-2. **Gate 0-1 (Auto QA)**: Validate SRS schema + AC ↔ requirement traceability
+2. **Gate 0-1 (Auto QA)**: `node scripts/validate-srs.js <srsPath>` — SRS schema + AC ↔ story traceability
 3. **Gate 0-2 (Human)**: Developer reviews SRS, resolves open questions → lock SRS
 4. Commit SRS, promote ADRs to LTM, clear working memory for Phase 1
 
@@ -105,7 +105,7 @@ Four hook events registered in `.claude/settings.json` (test all with `scripts/t
 
 - **SessionStart** + **SubagentStart** (`session-start.js`): Inject the LTM slice — the Orchestrator gets every agent's items, each of the 4 agents gets only items whose `agents` include it. Items with `tags` are kept only when they meet `featureKeywords` in working memory (set it when a feature brief arrives). Always exits 0.
 - **PreToolUse** (`pre-tool-gate.js`, matcher: `Bash|Write|Edit|MultiEdit|NotebookEdit`): Blocks memory writes (file tools always; sub-agent Bash too), destructive bash (recursive rm, force push), per-agent write scopes and Bash allowlists (no `$(...)` or redirection), `gh pr merge` / `gh workflow run` until `stage3.goNoGo = "APPROVED"`, any sub-agent edit to `.claude/` or `CLAUDE.md`, and the green-retry cap.
-- **Stop** (`stop-gate.js`): Foundation pass-through. Will validate completion signals and run CI for Implementation Agent.
+- **SubagentStop** (`stop-gate.js`, the 4 agents): An agent may stop only with a valid completion signal (`scripts/validate-signal.js`: format, required outputs, SRS Gate 0-1 via `scripts/validate-srs.js`, AC → test traceability, coverage threshold). Implementation PASS also runs `npm run lint && npm test && npm run build` once. On failure the agent keeps running with the errors; a second stop is let through and signal-commit re-validates.
 
 ## Repository Structure
 
@@ -136,4 +136,4 @@ python3 -m http.server 8731
 
 ## Current State
 
-Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate (`scripts/test-hooks.sh`). Open: stop-gate signal validation (#6), MCP servers (#7). No Angular project code yet — awaiting first feature brief.
+Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate, and validate every agent's completion signal on SubagentStop (`scripts/test-hooks.sh`). Open: MCP servers (#7), sandbox (#8). No Angular project code yet — awaiting first feature brief.

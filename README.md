@@ -31,4 +31,4 @@ Feature Brief → SRS Agent → [Auto QA] → [Human Approval] → Implementatio
 
 ## Current State
 
-Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate (`scripts/test-hooks.sh`). Open: stop-gate signal validation (#6), MCP servers (#7). No Angular project code yet — awaiting first feature brief.
+Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate, and validate every agent's completion signal on SubagentStop (`scripts/test-hooks.sh`). Open: MCP servers (#7), sandbox (#8). No Angular project code yet — awaiting first feature brief.

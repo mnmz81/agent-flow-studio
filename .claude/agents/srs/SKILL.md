@@ -32,6 +32,8 @@ Write a single file: `docs/srs/feat-{id}.md`
 
 ### Required Sections (11)
 
+Use each name below as an exact `## ` heading (e.g. `## acceptanceCriteria`), each AC as `### AC-xx — title (story: US-xx, confidence: HIGH)`, and end with `## Self-critique log`. `scripts/validate-srs.js` checks this format at Gate 0-1 and when you stop.
+
 1. **featureOverview** — goals + nonGoals
 2. **userStories** — id, role, want, soThat
 3. **acceptanceCriteria** — Given/When/Then, machine-testable. Each tagged `confidence: HIGH | MED | LOW`

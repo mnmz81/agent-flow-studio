@@ -15,7 +15,13 @@ The patch is deep-merged; arrays are replaced, so pass full arrays.
 
 ## 1. Parse
 
-Take the last fenced JSON block in the agent's final message. If it is missing or invalid, do not guess: re-ask the agent once for the signal, then escalate.
+Take the last fenced JSON block in the agent's final message and validate it:
+
+```bash
+node scripts/validate-signal.js <agent-type> '<signal JSON>'
+```
+
+The SubagentStop hook already ran this check once; this run catches a signal the agent ended with after a second failed stop. On any `ERROR`, do not commit and do not guess: re-dispatch the agent once with the errors, then escalate.
 
 ## 2. Map
 

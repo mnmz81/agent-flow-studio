@@ -18,7 +18,7 @@ gh pr checks <n> --json name,bucket        # CI, when a PR exists
 
 | Gate | Before | PASS when | Else |
 |---|---|---|---|
-| 0-1 Auto QA | human SRS review | `phase0.status = "SRS_READY"`; the SRS file has all 11 sections; every AC is Given/When/Then and names a story; riskRegister has ≥ 2 rows | FAIL → re-dispatch the SRS Agent with the list of failures (once), then escalate |
+| 0-1 Auto QA | human SRS review | `phase0.status = "SRS_READY"` and `node scripts/validate-srs.js <srsPath>` exits 0 (11 sections, Given/When/Then ACs tied to stories, ≥ 2 risks, binary scope, self-critique log); review its WARN lines | FAIL → re-dispatch the SRS Agent with the list of failures (once), then escalate |
 | 0-2 Human | Phase 1 | the developer said "approved" in chat for this SRS; then commit the SRS and set `phase0.status = "LOCKED"` | CONDITIONAL → ask the developer |
 | 1-Review | Stage 3 | `stage1.verdict = "PASS"`, every required check `pass` (none pending), `stage2.aiReview = "APPROVED"` | FAIL → back to Stage 1 with the findings |
 | 1-Human | Stage 3, only if `riskTags` has `risk:high` | the developer approved the PR in chat | CONDITIONAL → ask |
