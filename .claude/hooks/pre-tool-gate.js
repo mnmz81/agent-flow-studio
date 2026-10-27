@@ -67,8 +67,9 @@ const BASH_ALLOW = {
 };
 // Production traffic needs Gate 1-GoNoGo: the Orchestrator sets stage3.goNoGo = "APPROVED" only after the human says go
 const NEEDS_GO = ['gh pr merge', 'gh workflow run'];
-// Options that make an allowed command write a file (checked on dequoted words)
-const WRITES_FILE = /^--(?:out-?dir|output(?:[-_]?(?:file|dir|directory|path))?|coverage-?dir(?:ectory)?)(?:=|$)/i;
+// Options that make an allowed command write a file (checked on dequoted words). git and GNU tools accept
+// any unique prefix of a long option (--out= is --output=), so match the prefix, not the full name.
+const WRITES_FILE = /^--(?:ou|coverage-?dir)/i;
 
 // gh api is read-only: one endpoint (not graphql) and only these flags. GET is the default method.
 function ghApiReadOnly(argv) {
@@ -97,7 +98,14 @@ function parseCommand(command) {
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
     if (quote === "'") { if (c === "'") quote = null; else word += c; continue; }
-    if (c === '\\') { word = (word ?? '') + (s[i + 1] ?? ''); i++; continue; }
+    if (c === '\\') {
+      const next = s[i + 1];
+      if (next === '\n') { i++; continue; } // line continuation: the shell joins the two halves
+      if (quote === '"' && !'$`"\\'.includes(next)) { word += c; continue; } // literal backslash in "..."
+      word = (word ?? '') + (next ?? '');
+      i++;
+      continue;
+    }
     if (c === '`' || c === '$') return null; // expands even inside "..."
     if (quote === '"') { if (c === '"') quote = null; else word += c; continue; }
     if (c === "'" || c === '"') { quote = c; word = word ?? ''; continue; }
@@ -141,7 +149,8 @@ if (allow) {
     if (starts(seg, ['gh api']) && !ghApiReadOnly(argv)) {
       block('gh api is read-only: one endpoint (not graphql) plus only --paginate, -i, --jq/-q, --cache, --silent.');
     }
-    const sortOut = argv[0] === 'sort' && argv.some((w) => /^-[a-zA-Z]*o/.test(w));
+    // sort: short flags only, none with o (-o FILE); any long option could abbreviate --output
+    const sortOut = argv[0] === 'sort' && argv.some((w) => /^-[a-zA-Z]*o|^--/.test(w));
     if (sortOut || argv.some((w) => WRITES_FILE.test(w))) block('no file-writing options in Bash; write files with the Write tool.');
   }
 }

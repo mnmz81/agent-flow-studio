@@ -156,6 +156,17 @@ sh_ 2 srs-agent "cat \$'\\x2e'claude/settings.json"
 sh_ 2 srs-agent 'cat .cl?ude/settings.json'
 sh_ 2 srs-agent 'cat .{claude,x}/settings.json'
 sh_ 2 ai-review-agent 'gh pr comment 42 --body "costs $HOME"'
+# backslash-newline is a line continuation: the shell joins the halves
+sh_ 2 srs-agent "$(printf 'cat .cla\\\nude/settings.json')"
+sh_ 2 srs-agent "$(printf 'git log -- CLAUDE\\\n.md')"
+sh_ 0 srs-agent 'git log --grep "a\b"'
+# abbreviated long options (unique prefixes) still write files
+sh_ 2 srs-agent 'git diff --out=/tmp/x'
+sh_ 2 srs-agent 'git log --outp=/tmp/x'
+sh_ 2 srs-agent 'sort --o=/tmp/x a.txt'
+sh_ 2 srs-agent 'sort --reverse a.txt'
+sh_ 0 srs-agent 'sort -r -n a.txt'
+sh_ 2 implementation-agent 'npx playwright test --ou=results'
 expect 0 pre-tool-gate.js "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$PWD/.claude/agents/srs/SKILL.md\"}}" 'Orchestrator/human may edit the harness'
 
 # Destructive-command bypasses (issue #2); built at runtime so this file holds no literal
