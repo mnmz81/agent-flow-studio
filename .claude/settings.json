@@ -1,4 +1,48 @@
 {
+  "sandbox": {
+    "enabled": true,
+    "allowUnsandboxedCommands": false,
+    "enableWeakerNetworkIsolation": true,
+    "failIfUnavailable": true,
+    "excludedCommands": [
+      "git push",
+      "git push *"
+    ],
+    "filesystem": {
+      "denyWrite": [
+        ".claude/agents",
+        ".claude/hooks",
+        ".claude/skills",
+        ".claude/settings.json",
+        ".claude/settings.local.json",
+        "CLAUDE.md",
+        ".githooks",
+        ".git/hooks",
+        ".git/config",
+        "~/.claude"
+      ]
+    },
+    "network": {
+      "allowedDomains": [
+        "github.com",
+        "*.github.com",
+        "*.githubusercontent.com",
+        "*.npmjs.org"
+      ]
+    },
+    "credentials": {
+      "files": [
+        {
+          "path": "~/.ssh",
+          "mode": "deny"
+        },
+        {
+          "path": "~/.aws",
+          "mode": "deny"
+        }
+      ]
+    }
+  },
   "hooks": {
     "SessionStart": [
       {

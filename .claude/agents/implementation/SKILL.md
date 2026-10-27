@@ -2,7 +2,7 @@
 name: implementation-agent
 description: "Phase 1, Stage 1 — TDD agent. Writes failing tests from acceptance criteria, then Angular code to green, then refactors. All in one context. Emits DONE signal with verdict, PR URL, coverage."
 model: claude-opus-5-5
-tools: Read, Grep, Glob, Write, Edit, Bash
+tools: Read, Grep, Glob, Write, Edit, Bash, mcp__angular-cli__*, mcp__playwright__*
 skills:
   - ac-to-failing-test
   - angular-standalone-components
@@ -12,6 +12,15 @@ skills:
   - playwright-e2e-patterns
   - storybook-story-writing
   - coverage-gap-deviation-flagging
+mcpServers:
+  - angular-cli:
+      type: stdio
+      command: npx
+      args: ["-y", "@angular/cli@22.2.2", "mcp", "--read-only"]
+  - playwright:
+      type: stdio
+      command: npx
+      args: ["-y", "@playwright/mcp@0.0.83", "--headless", "--isolated", "--allowed-origins", "http://localhost:4200;http://127.0.0.1:4200"]
 ---
 
 # Implementation Agent
@@ -104,8 +113,10 @@ Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-t
 - **Write / Edit** — only `src/**` and `e2e/**`. Never the SRS: log an `SRS_DEVIATION` instead.
 - **Bash, tests** — run the narrowest test first (`npx jest path/to/x.spec.ts` or `npm test -- x.spec`) for the red/green loop, the full suite before the PR. Also `ng test|build|lint|generate`, `npm run lint|build|e2e`, `npx playwright test`, `npm ci`.
 - **Bash, no new dependencies** — `npm install` is blocked. If the SRS needs a package, log a deviation and stop.
-- **Bash, git + PR** — `git switch -c feat/{id}`, `git add`, `git commit`, `git push` (never force). `gh pr create --title "..." --body "..."`, `gh pr edit`, `gh pr view`, `gh pr checks`.
+- **Bash, git + PR** — `git switch -c feat/{id}`, `git add`, `git commit`, `git push -u origin feat/{id}` (only to `origin`, plain branch names, never force). `gh pr create --title "..." --body "..."`, `gh pr edit`, `gh pr view`, `gh pr checks`.
 - No `$(...)`, backticks or `<` `>` redirection; write files with Write.
+- **MCP `angular-cli`** (read-only) — `get_best_practices` before writing a new kind of component or service; `search_documentation` / `find_examples` for an API you are unsure of. It never writes files.
+- **MCP `playwright`** — look at the running app (`ng serve` on localhost:4200) to find roles and labels for E2E locators, or to see why an E2E test fails. Only localhost:4200 is allowed. It does not replace the Playwright test suite: every AC still needs a test in `e2e/`.
 
 ## Skills
 

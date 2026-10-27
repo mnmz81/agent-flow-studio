@@ -107,6 +107,11 @@ Four hook events registered in `.claude/settings.json` (test all with `scripts/t
 - **PreToolUse** (`pre-tool-gate.js`, matcher: `Bash|Write|Edit|MultiEdit|NotebookEdit`): Blocks memory writes (file tools always; sub-agent Bash too), destructive bash (recursive rm, force push), per-agent write scopes and Bash allowlists (no `$(...)` or redirection), `gh pr merge` / `gh workflow run` until `stage3.goNoGo = "APPROVED"`, any sub-agent edit to `.claude/` or `CLAUDE.md`, and the green-retry cap.
 - **SubagentStop** (`stop-gate.js`, the 4 agents): An agent may stop only with a valid completion signal (`scripts/validate-signal.js`: format, required outputs, SRS Gate 0-1 via `scripts/validate-srs.js`, AC → test traceability, coverage threshold). Implementation PASS also runs `npm run lint && npm test && npm run build` once. On failure the agent keeps running with the errors; a second stop is let through and signal-commit re-validates.
 
+## Sandbox and MCP
+
+- **Sandbox** (`sandbox` in `.claude/settings.json`, macOS Seatbelt / Linux bubblewrap): every Bash command — Orchestrator and agents — runs in an OS sandbox. It cannot write `.claude/agents|hooks|skills`, the settings files, `CLAUDE.md`, `.githooks`, `.git/hooks`, `.git/config` or `~/.claude`; `.claude/memory` stays writable for `scripts/update-working-memory.js`. Network goes through a proxy that pre-allows GitHub and npm; other hosts prompt (a hard block needs `sandbox.network.strictAllowlist: true` in user settings). No retry outside the sandbox, and Claude Code refuses to start if the sandbox is unavailable (`failIfUnavailable`). Only `git push` runs unsandboxed (SSH), and the gate limits agents to `git push [-u] origin <branch>`. Edit harness files with the Edit/Write tools, not Bash.
+- **MCP**: inline, version-pinned servers in agent frontmatter (`mcpServers`), so they never load in the Orchestrator's context: Implementation gets `angular-cli` (read-only) and `playwright` (headless, localhost:4200 only); AI Review gets `angular-cli` (read-only). MCP servers run outside the Bash sandbox; GitHub stays on `gh` (no GitHub MCP).
+
 ## Repository Structure
 
 ```
@@ -136,4 +141,4 @@ python3 -m http.server 8731
 
 ## Current State
 
-Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate, and validate every agent's completion signal on SubagentStop (`scripts/test-hooks.sh`). Open: MCP servers (#7), sandbox (#8). No Angular project code yet — awaiting first feature brief.
+Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate, and validate every agent's completion signal on SubagentStop (`scripts/test-hooks.sh`). Bash runs in an OS sandbox that protects the harness; agents get pinned, per-agent MCP servers. No Angular project code yet — awaiting first feature brief.

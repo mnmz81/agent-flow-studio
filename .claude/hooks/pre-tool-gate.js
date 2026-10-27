@@ -150,6 +150,15 @@ if (allow) {
     if (starts(seg, ['gh api']) && !ghApiReadOnly(argv)) {
       block('gh api is read-only: one endpoint (not graphql) plus only --paginate, -i, --jq/-q, --cache, --silent.');
     }
+    // git push runs outside the sandbox (excludedCommands), so agents may push only a branch to origin:
+    // no URL or other remote (exfiltration), no src:dst refspecs, no flags but -u.
+    if (starts(seg, ['git push'])) {
+      const args = argv.slice(2);
+      const pos = args.filter((w) => !w.startsWith('-'));
+      const ok = args.every((w) => !w.startsWith('-') || ['-u', '--set-upstream'].includes(w)) &&
+        (!pos.length || pos[0] === 'origin') && pos.slice(1).every((r) => /^[\w./-]+$/.test(r));
+      if (!ok) block('git push: only "git push [-u] origin <branch>" — no URLs, other remotes, refspecs or other flags.');
+    }
     // sort: short flags only, none with o (-o FILE); any long option could abbreviate --output
     const sortOut = argv[0] === 'sort' && argv.some((w) => /^-[a-zA-Z]*o|^--/.test(w));
     if (sortOut || argv.some((w) => WRITES_FILE.test(w))) block('no file-writing options in Bash; write files with the Write tool.');

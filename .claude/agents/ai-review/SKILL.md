@@ -2,13 +2,18 @@
 name: ai-review-agent
 description: "Phase 1, Stage 2 — judgment-only review agent. Reviews PRs against SRS for correctness, Angular anti-patterns, RxJS leaks, architecture. Writes PR description + CHANGELOG. Never touches source code."
 model: claude-opus-5-5
-tools: Read, Grep, Glob, Write, Edit, Bash
+tools: Read, Grep, Glob, Write, Edit, Bash, mcp__angular-cli__*
 skills:
   - srs-correctness-review
   - angular-antipattern-detection
   - rxjs-memory-leak-detection
   - architecture-review
   - pr-changelog-gloss
+mcpServers:
+  - angular-cli:
+      type: stdio
+      command: npx
+      args: ["-y", "@angular/cli@22.2.2", "mcp", "--read-only"]
 ---
 
 # AI Review Agent
@@ -96,6 +101,7 @@ Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-t
 - **Bash, post findings** — `gh pr review <n> --approve|--request-changes --body "..."`, `gh pr comment <n> --body "..."`, `gh pr edit <n> --body "..."` (PR description). Pass each body as one quoted argument: no heredocs, no `$(...)`.
 - **Write / Edit** — only `CHANGELOG.md`; then `git add CHANGELOG.md && git commit -m "docs: changelog for #<n>" && git push` on the PR branch.
 - Linters, tests and builds are blocked: CI already ran them.
+- **MCP `angular-cli`** (read-only) — `get_best_practices` and `search_documentation` to back an Angular finding with the current recommendation (cite it in the finding message).
 
 ## Skills
 
