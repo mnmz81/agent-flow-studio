@@ -67,35 +67,52 @@ const BASH_ALLOW = {
 };
 // Production traffic needs Gate 1-GoNoGo: the Orchestrator sets stage3.goNoGo = "APPROVED" only after the human says go
 const NEEDS_GO = ['gh pr merge', 'gh workflow run'];
-// gh api may only read: no non-GET method, no request fields/body
-// gh api is read-only: GET is the default, so any method, field, body or header flag (attached or in a
-// short-flag cluster like -iX) is refused, and so is graphql (mutations).
-const GH_API_WRITE = /(?:^|\s)['"]?(?:-[a-zA-Z]*[fFXH]|--(?:field|raw-field|input|header|method))|^gh api\s+graphql\b/;
-// Options that make an allowed command write a file (sort -o, git --output, jest --outputFile, …)
-const WRITES_FILE = /\s--output(?:[-_]?(?:file|dir|directory))?(?:[\s=]|$)|^sort\b.*\s-[a-zA-Z]*o/i;
+// Options that make an allowed command write a file (checked on dequoted words)
+const WRITES_FILE = /^--(?:out-?dir|output(?:[-_]?(?:file|dir|directory|path))?|coverage-?dir(?:ectory)?)(?:=|$)/i;
 
-// Split on unquoted ; & | and newlines. Returns null when the command uses command or process
-// substitution or a file redirection, which could hide another command or write outside the write scope.
-function segments(command) {
+// gh api is read-only: one endpoint (not graphql) and only these flags. GET is the default method.
+function ghApiReadOnly(argv) {
+  let endpoints = 0;
+  for (let i = 2; i < argv.length; i++) {
+    const t = argv[i];
+    if (['--paginate', '-i', '--include', '--silent'].includes(t) || /^--(?:jq|cache)=/.test(t)) continue;
+    if (['-q', '--jq', '--cache'].includes(t)) { i++; continue; } // flag with a value
+    if (t.startsWith('-') || t === 'graphql' || ++endpoints > 1) return false;
+  }
+  return endpoints === 1;
+}
+
+// Parse a command the way the shell will: split on unquoted ; & | and newlines, and dequote each
+// segment into words, so 'g''h', -'X'POST or .cla""ude are checked as gh, -XPOST and .claude.
+// Returns null for anything whose words the shell would still change or that could write a file:
+// any $ expansion ($VAR, ${..}, $(..), $'..'), backticks, globs, brace expansion, < > redirection.
+function parseCommand(command) {
   const s = command.replace(/\s\d?>&\d|\s\d?>\s*\/dev\/null/g, ' '); // 2>&1 and >/dev/null are fine
-  const out = [];
-  let cur = '';
+  const segs = [];
+  let words = [];
+  let word = null;
   let quote = null;
+  const endWord = () => { if (word !== null) words.push(word); word = null; };
+  const endSeg = () => { endWord(); if (words.length) segs.push(words); words = []; };
   for (let i = 0; i < s.length; i++) {
     const c = s[i];
-    if (quote === "'") { if (c === "'") quote = null; cur += c; continue; }
-    if (c === '\\') { cur += c + (s[i + 1] ?? ''); i++; continue; }
-    if (c === '`' || (c === '$' && '({'.includes(s[i + 1]))) return null; // expands even inside "..."
-    if (quote === '"') { if (c === '"') quote = null; cur += c; continue; }
-    if (c === "'" || c === '"') { quote = c; cur += c; continue; }
-    if (c === '<' || c === '>') return null;
-    if (';&|\n'.includes(c)) { out.push(cur); cur = ''; continue; }
-    cur += c;
+    if (quote === "'") { if (c === "'") quote = null; else word += c; continue; }
+    if (c === '\\') { word = (word ?? '') + (s[i + 1] ?? ''); i++; continue; }
+    if (c === '`' || c === '$') return null; // expands even inside "..."
+    if (quote === '"') { if (c === '"') quote = null; else word += c; continue; }
+    if (c === "'" || c === '"') { quote = c; word = word ?? ''; continue; }
+    if ('<>*?['.includes(c)) return null;
+    if (c === '{' && !/^\{\w+\}/.test(s.slice(i))) return null; // {owner}-style placeholders only
+    if (';&|\n'.includes(c)) { endSeg(); continue; }
+    if (/\s/.test(c)) { endWord(); continue; }
+    word = (word ?? '') + c;
   }
-  out.push(cur);
-  // Only harmless env prefixes are dropped; any other VAR=… (NODE_OPTIONS, GIT_*, PAGER) leaves the segment
-  // unmatched by the allowlist, so it is refused.
-  return out.map((x) => x.trim().replace(/^((?:CI|FORCE_COLOR|NO_COLOR)=\S*\s+)+/, '')).filter(Boolean);
+  if (quote) return null;
+  endSeg();
+  // Only harmless env prefixes are dropped; any other VAR=… (NODE_OPTIONS, GIT_*, PAGER) is left as the
+  // first word, which no allowlist entry matches, so the segment is refused.
+  for (const w of segs) while (w.length && /^(?:CI|FORCE_COLOR|NO_COLOR)=/.test(w[0])) w.shift();
+  return segs.filter((w) => w.length);
 }
 
 const agentType = input.agent_type;
@@ -109,17 +126,23 @@ try {
 
 const allow = isSubAgent && tool === 'Bash' ? BASH_ALLOW[agentType] : null;
 if (allow) {
-  const segs = segments(cmd);
-  if (!segs) block('use no $(...), ${...}, backticks or < > redirection; write files with the Write tool.');
-  if (/\.claude|claude\.md/i.test(cmd)) block('agents may not touch the harness (.claude/, CLAUDE.md) from Bash.');
+  const segs = parseCommand(cmd);
+  if (!segs) {
+    block('use no $ expansion, backticks, globs (* ? [), brace lists or < > redirection; use single quotes for literal text and the Write tool for files.');
+  }
   const starts = (seg, prefixes) => prefixes.some((p) => seg === p || seg.startsWith(p + ' '));
-  for (const seg of segs) {
+  for (const argv of segs) {
+    const seg = argv.join(' ');
+    if (argv.some((w) => /\.claude|claude\.md/i.test(w))) block('agents may not touch the harness (.claude/, CLAUDE.md) from Bash.');
     if (!starts(seg, allow)) block(`${agentType} may not run "${seg.slice(0, 60)}". Allowed: ${allow.join(', ')}`);
     if (starts(seg, NEEDS_GO) && wm.stage3?.goNoGo !== 'APPROVED') {
       block('production traffic needs the human go/no-go (stage3.goNoGo = APPROVED). Stop and emit READY.');
     }
-    if (starts(seg, ['gh api']) && GH_API_WRITE.test(seg)) block('gh api is read-only for agents.');
-    if (WRITES_FILE.test(seg)) block('no file-writing options in Bash; write files with the Write tool.');
+    if (starts(seg, ['gh api']) && !ghApiReadOnly(argv)) {
+      block('gh api is read-only: one endpoint (not graphql) plus only --paginate, -i, --jq/-q, --cache, --silent.');
+    }
+    const sortOut = argv[0] === 'sort' && argv.some((w) => /^-[a-zA-Z]*o/.test(w));
+    if (sortOut || argv.some((w) => WRITES_FILE.test(w))) block('no file-writing options in Bash; write files with the Write tool.');
   }
 }
 if (isSubAgent && ['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool) && filePath) {

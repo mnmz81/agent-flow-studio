@@ -142,6 +142,20 @@ sh_ 2 implementation-agent 'NODE_OPTIONS=--require=./x.js npm test'
 sh_ 2 srs-agent 'GIT_EXTERNAL_DIFF=sh git diff'
 sh_ 0 implementation-agent 'CI=true FORCE_COLOR=0 npm test'
 sh_ 2 srs-agent 'git log ${HOME}'
+# quote splicing / expansion: checks must run on the dequoted words the shell will see
+sh_ 2 devops-agent "gh api -'X'POST repos/o/r/dispatches"
+sh_ 2 devops-agent "gh api repos/o/r/dispatches -''f a=b"
+sh_ 2 devops-agent "gh api 'graph''ql' -q .data"
+sh_ 2 devops-agent "'gh' 'pr' 'merge' 42"
+sh_ 0 devops-agent "gh api 'repos/{owner}/{repo}/commits/abc/check-runs' --jq '.check_runs[].name'"
+sh_ 0 devops-agent 'gh api repos/{owner}/{repo}/pulls --paginate'
+sh_ 2 implementation-agent 'npx jest --out""putFile=x.json'
+sh_ 2 implementation-agent 'npx jest --coverageDirectory=/tmp/c'
+sh_ 2 srs-agent 'cat .cla""ude/settings.json'
+sh_ 2 srs-agent "cat \$'\\x2e'claude/settings.json"
+sh_ 2 srs-agent 'cat .cl?ude/settings.json'
+sh_ 2 srs-agent 'cat .{claude,x}/settings.json'
+sh_ 2 ai-review-agent 'gh pr comment 42 --body "costs $HOME"'
 expect 0 pre-tool-gate.js "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$PWD/.claude/agents/srs/SKILL.md\"}}" 'Orchestrator/human may edit the harness'
 
 # Destructive-command bypasses (issue #2); built at runtime so this file holds no literal
