@@ -45,4 +45,4 @@ Keep a Changelog format, newest on top, under `## [Unreleased]`:
 - Sections: Added, Changed, Deprecated, Removed, Fixed, Security. Auth or permission changes also get a Security line.
 - Write for users of the app, not for developers: what changed for them.
 - Create the file with a `# Changelog` heading if it does not exist.
-- Commit on the PR branch: `git add CHANGELOG.md && git commit -m "docs: changelog for #<n>" && git push`.
+- Commit on the PR branch: `git add CHANGELOG.md && git commit -m "docs: changelog for #<n>"`, then `git push` as its own command.

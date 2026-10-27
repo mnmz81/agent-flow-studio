@@ -99,7 +99,7 @@ Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-t
 - **Bash, read the PR** — `gh pr view <n> --json files,body,headRefName`, `gh pr diff <n>`, `gh pr checks <n>` (CI results: read them, never re-run checks), `git diff`, `git log`.
 - **Read / Grep / Glob** — read the SRS and the code around each changed hunk. Never edit source.
 - **Bash, post findings** — `gh pr review <n> --approve|--request-changes --body "..."`, `gh pr comment <n> --body "..."`, `gh pr edit <n> --body "..."` (PR description). Pass each body as one quoted argument: no heredocs, no `$(...)`.
-- **Write / Edit** — only `CHANGELOG.md`; then `git add CHANGELOG.md && git commit -m "docs: changelog for #<n>" && git push` on the PR branch.
+- **Write / Edit** — only `CHANGELOG.md`; then `git add CHANGELOG.md && git commit -m "docs: changelog for #<n>"` on the PR branch, and `git push` as a separate command (a push inside a compound command runs sandboxed and cannot reach SSH).
 - Linters, tests and builds are blocked: CI already ran them.
 - **MCP `angular-cli`** (read-only) — `get_best_practices` and `search_documentation` to back an Angular finding with the current recommendation (cite it in the finding message).
 
