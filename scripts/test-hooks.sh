@@ -167,6 +167,11 @@ sh_ 2 srs-agent 'sort --o=/tmp/x a.txt'
 sh_ 2 srs-agent 'sort --reverse a.txt'
 sh_ 0 srs-agent 'sort -r -n a.txt'
 sh_ 2 implementation-agent 'npx playwright test --ou=results'
+# function definitions and subshells: an allowed name can be redefined to run anything
+sh_ 2 srs-agent 'ls () (npm install evil); ls'
+sh_ 2 srs-agent 'ls() (npm install evil); ls'
+sh_ 2 srs-agent '(npm install evil)'
+sh_ 0 srs-agent 'git log --grep "fix (AC-1)"'
 expect 0 pre-tool-gate.js "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$PWD/.claude/agents/srs/SKILL.md\"}}" 'Orchestrator/human may edit the harness'
 
 # Destructive-command bypasses (issue #2); built at runtime so this file holds no literal

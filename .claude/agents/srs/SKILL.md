@@ -75,7 +75,7 @@ When complete, output this JSON as your final message:
 
 ## Tool Guidance
 
-Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-tool-gate.js` enforces the limits below. A blocked call returns `[gate] ...`: read it, do not retry the same call, change the approach or report it in your signal. Every agent may also run the read-only `git status`, `git log`, `git diff`, `git show`, `cat`, `ls`, `head`, `tail`, `grep`, `wc`, `sort`, `jq`, including in pipes. Bash may not use `$` expansion, backticks, globs (`* ? [`), brace lists, `<` `>` redirection or output-file options (`--output…`, `sort -o`): put literal text in single quotes and write files with Write.
+Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-tool-gate.js` enforces the limits below. A blocked call returns `[gate] ...`: read it, do not retry the same call, change the approach or report it in your signal. Every agent may also run the read-only `git status`, `git log`, `git diff`, `git show`, `cat`, `ls`, `head`, `tail`, `grep`, `wc`, `sort`, `jq`, including in pipes. Bash may not use `$` expansion, backticks, globs (`* ? [`), brace lists, unquoted `( )`, `<` `>` redirection or output-file options (`--output…`, `sort -o`): put literal text in single quotes and write files with Write.
 
 - **Glob / Grep / Read** — find prior art before writing: `src/**/*.stories.ts` (Storybook inventory, for reuse decisions) and `docs/srs/*.md` (earlier SRSs). The LTM slice is already in your context. Read only what you need.
 - **Write / Edit** — only `docs/srs/**`. Write `docs/srs/feat-{id}.md` once, then Edit it for the self-critique fixes.

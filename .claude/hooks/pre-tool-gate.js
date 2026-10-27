@@ -86,7 +86,8 @@ function ghApiReadOnly(argv) {
 // Parse a command the way the shell will: split on unquoted ; & | and newlines, and dequote each
 // segment into words, so 'g''h', -'X'POST or .cla""ude are checked as gh, -XPOST and .claude.
 // Returns null for anything whose words the shell would still change or that could write a file:
-// any $ expansion ($VAR, ${..}, $(..), $'..'), backticks, globs, brace expansion, < > redirection.
+// any $ expansion ($VAR, ${..}, $(..), $'..'), backticks, globs, brace expansion, ( ) subshells or
+// function definitions, < > redirection.
 function parseCommand(command) {
   const s = command.replace(/\s\d?>&\d|\s\d?>\s*\/dev\/null/g, ' '); // 2>&1 and >/dev/null are fine
   const segs = [];
@@ -109,7 +110,7 @@ function parseCommand(command) {
     if (c === '`' || c === '$') return null; // expands even inside "..."
     if (quote === '"') { if (c === '"') quote = null; else word += c; continue; }
     if (c === "'" || c === '"') { quote = c; word = word ?? ''; continue; }
-    if ('<>*?['.includes(c)) return null;
+    if ('<>*?[()'.includes(c)) return null; // ( ) would allow subshells and `ls () (...)` function redefinitions
     if (c === '{' && !/^\{\w+\}/.test(s.slice(i))) return null; // {owner}-style placeholders only
     if (';&|\n'.includes(c)) { endSeg(); continue; }
     if (/\s/.test(c)) { endWord(); continue; }

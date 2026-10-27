@@ -107,7 +107,7 @@ Verdict values: `HEALTHY` (100% with metrics clean) | `DEGRADED` (breach trigger
 
 ## Tool Guidance
 
-Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-tool-gate.js` enforces the limits below. A blocked call returns `[gate] ...`: read it, do not retry the same call, change the approach or report it in your signal. Every agent may also run the read-only `git status`, `git log`, `git diff`, `git show`, `cat`, `ls`, `head`, `tail`, `grep`, `wc`, `sort`, `jq`, including in pipes. Bash may not use `$` expansion, backticks, globs (`* ? [`), brace lists, `<` `>` redirection or output-file options (`--output…`, `sort -o`): put literal text in single quotes and write files with Write.
+Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-tool-gate.js` enforces the limits below. A blocked call returns `[gate] ...`: read it, do not retry the same call, change the approach or report it in your signal. Every agent may also run the read-only `git status`, `git log`, `git diff`, `git show`, `cat`, `ls`, `head`, `tail`, `grep`, `wc`, `sort`, `jq`, including in pipes. Bash may not use `$` expansion, backticks, globs (`* ? [`), brace lists, unquoted `( )`, `<` `>` redirection or output-file options (`--output…`, `sort -o`): put literal text in single quotes and write files with Write.
 
 - **Bash, read CI** — `gh pr checks <n>`, `gh run list`, `gh run view <id> --log-failed`, `gh api repos/{owner}/{repo}/commits/{sha}/check-runs`. `gh api` is read-only (no `-X`, `-f`, `--input`).
 - **Bash, environment** — `gh secret list`, `gh variable list` (names only; never print secret values).
