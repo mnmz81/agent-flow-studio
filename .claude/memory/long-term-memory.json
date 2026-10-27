@@ -1,0 +1,13 @@
+{
+  "projectMeta": {
+    "stack": "Angular 17 + TS 5",
+    "coverageThreshold": 80,
+    "srsSchemaVersion": 1
+  },
+  "adrs": [],
+  "patterns": [],
+  "conventions": {
+    "componentNaming": "kebab-case",
+    "stateManagement": "Angular signals"
+  }
+}

@@ -1,0 +1,28 @@
+{
+  "featureId": null,
+  "phase": null,
+  "currentStage": null,
+  "srsPath": null,
+  "riskTags": [],
+  "phase0": {
+    "status": "PENDING"
+  },
+  "stage1": {
+    "status": "PENDING",
+    "verdict": null,
+    "prUrl": null,
+    "coveragePercent": null,
+    "greenRetries": 0,
+    "srsDeviations": []
+  },
+  "stage2": {
+    "ci": "PENDING",
+    "aiReview": "PENDING"
+  },
+  "stage3": {
+    "status": "PENDING",
+    "verdict": null,
+    "rolloutPercent": 0
+  },
+  "humanGate": "PENDING"
+}
