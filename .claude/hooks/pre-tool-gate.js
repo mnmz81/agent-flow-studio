@@ -120,7 +120,7 @@ function parseCommand(command) {
   endSeg();
   // Only harmless env prefixes are dropped; any other VAR=… (NODE_OPTIONS, GIT_*, PAGER) is left as the
   // first word, which no allowlist entry matches, so the segment is refused.
-  for (const w of segs) while (w.length && /^(?:CI|FORCE_COLOR|NO_COLOR)=/.test(w[0])) w.shift();
+  for (const w of segs) while (w.length && /^(?:CI|FORCE_COLOR|NO_COLOR)=/.test(w[0])) { w.shift(); w.hadEnv = true; }
   return segs.filter((w) => w.length);
 }
 
@@ -155,9 +155,9 @@ if (allow) {
     if (starts(seg, ['git push'])) {
       const args = argv.slice(2);
       const pos = args.filter((w) => !w.startsWith('-'));
-      const ok = args.every((w) => !w.startsWith('-') || ['-u', '--set-upstream'].includes(w)) &&
+      const ok = !argv.hadEnv && args.every((w) => !w.startsWith('-') || ['-u', '--set-upstream'].includes(w)) &&
         (!pos.length || pos[0] === 'origin') && pos.slice(1).every((r) => /^[\w./-]+$/.test(r));
-      if (!ok) block('git push: only "git push [-u] origin <branch>" — no URLs, other remotes, refspecs or other flags.');
+      if (!ok) block('git push: only "git push [-u] origin <branch>" as its own command — no env prefix, URLs, other remotes, refspecs or other flags.');
     }
     // sort: short flags only, none with o (-o FILE); any long option could abbreviate --output
     const sortOut = argv[0] === 'sort' && argv.some((w) => /^-[a-zA-Z]*o|^--/.test(w));

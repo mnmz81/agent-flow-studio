@@ -39,7 +39,12 @@
         {
           "path": "~/.aws",
           "mode": "deny"
-        }
+        },
+        { "path": "~/.netrc", "mode": "deny" },
+        { "path": "~/.npmrc", "mode": "deny" },
+        { "path": "~/.docker/config.json", "mode": "deny" },
+        { "path": "~/.kube", "mode": "deny" },
+        { "path": "~/.gnupg", "mode": "deny" }
       ]
     }
   },
