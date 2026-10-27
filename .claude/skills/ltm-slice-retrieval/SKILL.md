@@ -1,8 +1,6 @@
 ---
 name: ltm-slice-retrieval
 description: "Extract only the relevant slice of long-term-memory.json for the current feature type — matching patterns, applicable ADRs, conventions. Keeps agent context small as LTM grows."
-status: implemented
-trigger: SessionStart + new feature brief
 ---
 
 # LTM Slice Retrieval

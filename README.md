@@ -6,7 +6,7 @@ Multi-agent orchestration framework for automating full-stack Angular developmen
 
 ```
 .claude/agents/     — Agent SKILL.md definitions (SRS, Implementation, AI Review, DevOps)
-.claude/skills/     — Orchestrator skill definitions
+.claude/skills/     — Agent + Orchestrator skills (<name>/SKILL.md)
 .claude/hooks/      — Deterministic hook implementations (JS)
 .claude/memory/     — Control-plane + persistent memory (JSON, git-versioned)
 designs/            — HTML spec documents (source of truth for architecture)
@@ -31,4 +31,4 @@ Feature Brief → SRS Agent → [Auto QA] → [Human Approval] → Implementatio
 
 ## Current State
 
-Foundation layer complete. Agent shells defined, hooks registered, memory initialized. Skills not yet implemented (25 across all agents). No Angular project code yet — awaiting first feature brief.
+Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate (`scripts/test-hooks.sh`). Open: stop-gate signal validation (#6), MCP servers (#7). No Angular project code yet — awaiting first feature brief.

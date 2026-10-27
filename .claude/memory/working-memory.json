@@ -22,7 +22,8 @@
   "stage3": {
     "status": "PENDING",
     "verdict": null,
-    "rolloutPercent": 0
+    "rolloutPercent": 0,
+    "goNoGo": "PENDING"
   },
   "humanGate": "PENDING",
   "featureKeywords": []

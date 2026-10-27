@@ -53,7 +53,7 @@ Durable data (SRS docs, source code, configs) lives in git-versioned files — n
 **Stage 3 — DevOps**
 1. Dispatch **DevOps Agent** (`.claude/agents/devops/SKILL.md`) Phase A — pre-deploy checklist
 2. Agent emits `READY` signal → STOP
-3. **Gate 1-GoNoGo (Human)**: explicit human authorization (MANDATORY, never skipped)
+3. **Gate 1-GoNoGo (Human)**: explicit human authorization (MANDATORY, never skipped). On "go", record it: `node scripts/update-working-memory.js '{"stage3":{"goNoGo":"APPROVED"}}'` — the gate blocks `gh pr merge` and `gh workflow run` until then
 4. Dispatch DevOps Agent Phase B — gradual rollout (0% → 5% → 25% → 100%)
 5. **Gate 1-Health**: metrics clean at each step, auto-rollback on breach
 
@@ -104,14 +104,14 @@ Dispatch agents using the Task tool. Always provide:
 Four hook events registered in `.claude/settings.json` (test all with `scripts/test-hooks.sh`):
 
 - **SessionStart** + **SubagentStart** (`session-start.js`): Inject the LTM slice — the Orchestrator gets every agent's items, each of the 4 agents gets only items whose `agents` include it. Items with `tags` are kept only when they meet `featureKeywords` in working memory (set it when a feature brief arrives). Always exits 0.
-- **PreToolUse** (`pre-tool-gate.js`, matcher: `Bash|Write|Edit|MultiEdit|NotebookEdit`): Blocks memory writes (file tools always; sub-agent Bash too), destructive bash (recursive rm, force push), per-agent write scopes, AI Review Bash, any sub-agent edit to `.claude/` or `CLAUDE.md`, and the green-retry cap.
+- **PreToolUse** (`pre-tool-gate.js`, matcher: `Bash|Write|Edit|MultiEdit|NotebookEdit`): Blocks memory writes (file tools always; sub-agent Bash too), destructive bash (recursive rm, force push), per-agent write scopes and Bash allowlists (no `$(...)` or redirection), `gh pr merge` / `gh workflow run` until `stage3.goNoGo = "APPROVED"`, any sub-agent edit to `.claude/` or `CLAUDE.md`, and the green-retry cap.
 - **Stop** (`stop-gate.js`): Foundation pass-through. Will validate completion signals and run CI for Implementation Agent.
 
 ## Repository Structure
 
 ```
 .claude/agents/     — Agent SKILL.md definitions (SRS, Implementation, AI Review, DevOps)
-.claude/skills/     — Orchestrator skill definitions (gate eval, signal commit, etc.)
+.claude/skills/     — <name>/SKILL.md: agent skills (preloaded via agent frontmatter) + Orchestrator skills (gate-evaluation, signal-commit, escalation-brief, ltm-slice-retrieval)
 .claude/hooks/      — Hook implementations (JS)
 .claude/memory/     — Control-plane + persistent memory (JSON, git-versioned)
 designs/            — HTML spec documents (source of truth for architecture)
@@ -136,4 +136,4 @@ python3 -m http.server 8731
 
 ## Current State
 
-Foundation layer implemented. Agent SKILL.md shells defined, hooks registered, memory schemas initialized. Skills are described but not yet implemented (25 skills across all agents). No Angular project code exists yet — awaiting first feature brief to trigger Phase 0.
+Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate (`scripts/test-hooks.sh`). Open: stop-gate signal validation (#6), MCP servers (#7). No Angular project code yet — awaiting first feature brief.
