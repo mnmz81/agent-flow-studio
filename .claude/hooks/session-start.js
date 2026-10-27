@@ -13,7 +13,9 @@ try {
     JSON.stringify(ltm, null, 2),
     '```'
   ].join('\n');
-  process.stdout.write(JSON.stringify({ additionalContext: context }));
+  process.stdout.write(JSON.stringify({
+    hookSpecificOutput: { hookEventName: 'SessionStart', additionalContext: context }
+  }));
 } catch (err) {
   process.stderr.write(`[session-start] LTM not found or unreadable: ${err.message}\n`);
 }
