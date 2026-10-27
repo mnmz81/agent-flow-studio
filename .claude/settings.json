@@ -7,6 +7,14 @@
         ]
       }
     ],
+    "SubagentStart": [
+      {
+        "matcher": "^(srs-agent|implementation-agent|ai-review-agent|devops-agent)$",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.js\"", "timeout": 10 }
+        ]
+      }
+    ],
     "PreToolUse": [
       {
         "matcher": "Bash|Write|Edit|MultiEdit|NotebookEdit",

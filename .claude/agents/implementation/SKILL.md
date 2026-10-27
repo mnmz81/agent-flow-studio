@@ -1,6 +1,7 @@
 ---
 name: implementation-agent
 description: "Phase 1, Stage 1 — TDD agent. Writes failing tests from acceptance criteria, then Angular code to green, then refactors. All in one context. Emits DONE signal with verdict, PR URL, coverage."
+model: claude-opus-5-5
 ---
 
 # Implementation Agent

@@ -1,9 +1,13 @@
 #!/usr/bin/env node
 // Usage: node scripts/update-working-memory.js '{"phase":"phase0","phase0":{"status":"IN_PROGRESS"}}'
+//        node scripts/update-working-memory.js --ltm '{"adrs":[...]}'   (patch long-term-memory.json instead)
+// Arrays are replaced, not appended: pass the full array.
 const fs = require('fs');
 const path = require('path');
 
-const WM_PATH = path.join(__dirname, '..', '.claude', 'memory', 'working-memory.json');
+const ltm = process.argv[2] === '--ltm';
+if (ltm) process.argv.splice(2, 1);
+const WM_PATH = path.join(__dirname, '..', '.claude', 'memory', ltm ? 'long-term-memory.json' : 'working-memory.json');
 
 function deepMerge(target, source) {
   const result = { ...target };

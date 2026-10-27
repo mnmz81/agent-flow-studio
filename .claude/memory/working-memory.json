@@ -24,5 +24,6 @@
     "verdict": null,
     "rolloutPercent": 0
   },
-  "humanGate": "PENDING"
+  "humanGate": "PENDING",
+  "featureKeywords": []
 }

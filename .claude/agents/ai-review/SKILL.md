@@ -1,6 +1,7 @@
 ---
 name: ai-review-agent
 description: "Phase 1, Stage 2 — judgment-only review agent. Reviews PRs against SRS for correctness, Angular anti-patterns, RxJS leaks, architecture. Writes PR description + CHANGELOG. Never touches source code."
+model: claude-opus-5-5
 ---
 
 # AI Review Agent

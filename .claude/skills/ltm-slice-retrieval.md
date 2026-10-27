@@ -1,7 +1,7 @@
 ---
 name: ltm-slice-retrieval
 description: "Extract only the relevant slice of long-term-memory.json for the current feature type — matching patterns, applicable ADRs, conventions. Keeps agent context small as LTM grows."
-status: not-implemented
+status: implemented
 trigger: SessionStart + new feature brief
 ---
 
@@ -25,11 +25,9 @@ A compact context block containing only:
 
 ## Current State
 
-**NOT YET IMPLEMENTED** — the `session-start.js` hook currently injects the full LTM. This skill will provide the filtering logic when LTM grows beyond a trivial size.
+Implemented in `.claude/hooks/session-start.js` (SessionStart for the Orchestrator, SubagentStart for the 4 agents); tested by `scripts/test-hooks.sh`.
 
-## Future Implementation Notes
-
-- Match pattern triggers against feature brief keywords
-- Filter ADRs by tag/domain relevance
-- Always include conventions (small, universally applicable)
-- Output as markdown block for `additionalContext` injection
+- An ADR/pattern is kept when its `agents` (if set) include the receiving agent, and its `tags` (if set) meet `featureKeywords` in working memory.
+- No `featureKeywords` (no feature in flight): tagged items are kept, not hidden.
+- `projectMeta` and `conventions` always go in.
+- The Orchestrator sets `featureKeywords` from the feature brief: `node scripts/update-working-memory.js '{"featureKeywords":["forms","auth"]}'`.

@@ -23,7 +23,7 @@ Angular 17+ (standalone components, signals), TypeScript strict, Jest + Angular 
 Two JSON files, both git-versioned:
 
 - **`.claude/memory/working-memory.json`** — session-scoped control-plane signals. Cleared on feature ship. YOU are the only writer. Write via: `node scripts/update-working-memory.js '{"key":"value"}'`
-- **`.claude/memory/long-term-memory.json`** — persistent project knowledge (ADRs, patterns, conventions). Grows over time. Updated after retrospectives.
+- **`.claude/memory/long-term-memory.json`** — persistent project knowledge (ADRs, patterns, conventions). Grows over time. Updated after retrospectives via `node scripts/update-working-memory.js --ltm '{...}'`. Give an ADR/pattern `agents: [...]` and/or `tags: [...]` to scope which agents and features receive it.
 
 Durable data (SRS docs, source code, configs) lives in git-versioned files — never in memory JSON.
 
@@ -101,10 +101,10 @@ Dispatch agents using the Task tool. Always provide:
 
 ## Hook Behavior
 
-Three hooks registered in `.claude/settings.json`:
+Four hook events registered in `.claude/settings.json` (test all with `scripts/test-hooks.sh`):
 
-- **SessionStart** (`session-start.js`): Injects LTM context into every agent dispatch. Always exits 0.
-- **PreToolUse** (`pre-tool-gate.js`, matcher: `Bash|Write|Edit`): Blocks memory writes from sub-agents, blocks destructive bash (`rm -rf`, `git push --force`), checks green-retry cap.
+- **SessionStart** + **SubagentStart** (`session-start.js`): Inject the LTM slice — the Orchestrator gets every agent's items, each of the 4 agents gets only items whose `agents` include it. Items with `tags` are kept only when they meet `featureKeywords` in working memory (set it when a feature brief arrives). Always exits 0.
+- **PreToolUse** (`pre-tool-gate.js`, matcher: `Bash|Write|Edit|MultiEdit|NotebookEdit`): Blocks memory writes (file tools always; sub-agent Bash too), destructive bash (recursive rm, force push), per-agent write scopes, AI Review Bash, any sub-agent edit to `.claude/` or `CLAUDE.md`, and the green-retry cap.
 - **Stop** (`stop-gate.js`): Foundation pass-through. Will validate completion signals and run CI for Implementation Agent.
 
 ## Repository Structure

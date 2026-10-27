@@ -40,6 +40,29 @@ if (tool === 'Bash' && isSubAgent && /\.claude\/memory|update-working-memory/.te
   block('memory is control-plane; only the Orchestrator writes it.');
 }
 
+// 1b. Per-agent Hard Rules. Paths are repo-relative; a trailing '/' means "anything under".
+// shortcut: Bash writes are not path-scoped (a denylist can't parse them); allowlists are tracked in issue #4.
+const WRITE_SCOPES = {
+  'srs-agent': ['docs/srs/'],
+  'implementation-agent': ['src/', 'e2e/'],
+  'ai-review-agent': ['CHANGELOG.md'],
+  'devops-agent': ['.github/'],
+};
+const NO_BASH = ['ai-review-agent'];
+const HARNESS = ['.claude/', 'CLAUDE.md']; // no agent edits its own (or any) prompt, hooks or settings
+
+const agentType = input.agent_type;
+if (isSubAgent && tool === 'Bash' && NO_BASH.includes(agentType)) {
+  block(`${agentType} may not run Bash (CI already ran the checks).`);
+}
+if (isSubAgent && ['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool) && filePath) {
+  const rel = path.relative(realResolve(path.join(__dirname, '..', '..')), realResolve(filePath));
+  const under = (scopes) => scopes.some((s) => (s.endsWith('/') ? rel.startsWith(s) : rel === s));
+  if (under(HARNESS)) block('agents may not modify the harness (prompts, hooks, settings).');
+  const scopes = WRITE_SCOPES[agentType];
+  if (scopes && !under(scopes)) block(`${agentType} may only write to: ${scopes.join(', ')}`);
+}
+
 // 2. Destructive bash: recursive rm (any flag form, not git rm), force push (any form), DROP TABLE.
 // shortcut: a denylist can't see through variables or eval; per-agent allowlists are tracked in issue #4.
 if (tool === 'Bash') {

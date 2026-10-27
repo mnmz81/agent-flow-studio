@@ -1,6 +1,7 @@
 ---
 name: devops-agent
 description: "Phase 1, Stage 3 — two-phase deploy agent. Phase A: pre-deploy checklist → READY/BLOCKED. Human go/no-go gate. Phase B: feature-flag rollout 0→5→25→100 with health monitoring and auto-rollback."
+model: claude-sonnet-5-5
 ---
 
 # DevOps Agent

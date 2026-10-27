@@ -1,6 +1,7 @@
 ---
 name: srs-agent
 description: "Phase 0 — writes a complete SRS document from a feature brief in one pass with self-critique. Outputs docs/srs/feat-{id}.md and emits SRS_READY signal."
+model: claude-opus-5-5
 ---
 
 # SRS Agent

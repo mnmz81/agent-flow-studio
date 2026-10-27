@@ -4,7 +4,20 @@
     "coverageThreshold": 80,
     "srsSchemaVersion": 1
   },
-  "adrs": [],
+  "adrs": [
+    {
+      "id": "ADR-001",
+      "date": "2026-10-27",
+      "title": "Frozen Claude base model per agent",
+      "decision": "Agents run as Claude Code subagents on a pinned full Claude model ID (frontmatter model:). SRS, Implementation and AI Review use claude-opus-5-5; DevOps uses claude-sonnet-5-5. Aliases (opus/sonnet) are not used because they move with new releases.",
+      "rationale": "Agent = frozen base model + editable harness. The model never changes silently; behavior changes only through the harness (prompt, guardrails, memory, tools, skills, validation, plugins). Changing a model is a new ADR.",
+      "tags": [
+        "agents",
+        "model",
+        "harness"
+      ]
+    }
+  ],
   "patterns": [],
   "conventions": {
     "componentNaming": "kebab-case",
