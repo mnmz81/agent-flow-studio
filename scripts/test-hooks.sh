@@ -82,6 +82,14 @@ scope 2 srs-agent .claude/agents/srs/SKILL.md Edit
 scope 2 Explore CLAUDE.md Edit
 scope 2 Explore .claude/settings.json
 scope 0 Explore src/app/app.ts
+scope 2 Explore .Claude/settings.json            # case-insensitive FS (APFS) reaches .claude/
+scope 2 srs-agent ../outside-repo.md               # scoped agents stay in the repo
+# abs <exit> <agent|-> <absolute path>: '-' = main session (no agent_id)
+abs() { a=''; [ "$2" != - ] && a="\"agent_id\":\"a1\",\"agent_type\":\"$2\","; expect "$1" pre-tool-gate.js "{\"tool_name\":\"Write\",$a\"tool_input\":{\"file_path\":\"$3\"}}" "$2 Write $3 -> exit $1"; }
+abs 2 Explore "$HOME/.claude/settings.json"         # global harness, outside the repo
+abs 2 Explore /tmp/other-repo/CLAUDE.md
+abs 0 Explore /tmp/notes.md                          # unscoped agents may still write elsewhere
+abs 2 - "$PWD/.Claude/Memory/working-memory.json"    # memory gate, case-insensitive
 expect 2 pre-tool-gate.js '{"tool_name":"Bash","agent_id":"a1","agent_type":"ai-review-agent","tool_input":{"command":"ls"}}' 'ai-review-agent Bash -> exit 2'
 expect 0 pre-tool-gate.js '{"tool_name":"Bash","agent_id":"a1","agent_type":"srs-agent","tool_input":{"command":"git log -5"}}' 'srs-agent Bash git log -> exit 0'
 expect 0 pre-tool-gate.js "{\"tool_name\":\"Edit\",\"tool_input\":{\"file_path\":\"$PWD/.claude/agents/srs/SKILL.md\"}}" 'Orchestrator/human may edit the harness'

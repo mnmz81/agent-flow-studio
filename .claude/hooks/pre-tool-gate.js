@@ -20,11 +20,11 @@ function realResolve(p) {
   const abs = path.resolve(input.cwd ?? process.cwd(), p);
   let dir = abs;
   while (!fs.existsSync(dir) && path.dirname(dir) !== dir) dir = path.dirname(dir);
+  let real = abs;
   try {
-    return path.join(fs.realpathSync(dir), path.relative(dir, abs));
-  } catch {
-    return abs;
-  }
+    real = path.join(fs.realpathSync(dir), path.relative(dir, abs));
+  } catch {}
+  return real.toLowerCase(); // compare case-insensitively: on APFS/NTFS .Claude/ is .claude/
 }
 
 // 1. Memory is Orchestrator-only. File tools never write it (Orchestrator uses
@@ -49,16 +49,20 @@ const WRITE_SCOPES = {
   'devops-agent': ['.github/'],
 };
 const NO_BASH = ['ai-review-agent'];
-const HARNESS = ['.claude/', 'CLAUDE.md']; // no agent edits its own (or any) prompt, hooks or settings
 
 const agentType = input.agent_type;
 if (isSubAgent && tool === 'Bash' && NO_BASH.includes(agentType)) {
   block(`${agentType} may not run Bash (CI already ran the checks).`);
 }
 if (isSubAgent && ['Write', 'Edit', 'MultiEdit', 'NotebookEdit'].includes(tool) && filePath) {
-  const rel = path.relative(realResolve(path.join(__dirname, '..', '..')), realResolve(filePath));
-  const under = (scopes) => scopes.some((s) => (s.endsWith('/') ? rel.startsWith(s) : rel === s));
-  if (under(HARNESS)) block('agents may not modify the harness (prompts, hooks, settings).');
+  const target = realResolve(filePath);
+  const rel = path.relative(realResolve(path.join(__dirname, '..', '..')), target);
+  const under = (scopes) =>
+    scopes.map((s) => s.toLowerCase()).some((s) => (s.endsWith('/') ? rel.startsWith(s) : rel === s));
+  // No agent edits any harness (prompts, hooks, settings), in this repo or outside it (e.g. ~/.claude)
+  if (target.split(path.sep).includes('.claude') || path.basename(target) === 'claude.md') {
+    block('agents may not modify the harness (prompts, hooks, settings).');
+  }
   const scopes = WRITE_SCOPES[agentType];
   if (scopes && !under(scopes)) block(`${agentType} may only write to: ${scopes.join(', ')}`);
 }
