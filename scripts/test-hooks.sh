@@ -360,7 +360,12 @@ for (const d of fs.readdirSync('.claude/agents')) {
   const mcp = (head.match(/^mcpServers:\n((?:  .*\n?)*)/m) || [, ''])[1];
   const pkgs = [...mcp.matchAll(/"(@?[\w./-]+@[^"]+)"/g)].map((m) => m[1]);
   check(pkgs.every((p) => /@\d+\.\d+\.\d+$/.test(p)), `agent ${d} MCP packages pinned (${pkgs.join(', ') || 'none'})`);
-  for (const [, name] of mcp.matchAll(/^  - ([\w-]+):$/gm)) check(head.includes(`mcp__${name}__*`), `agent ${d} allows mcp__${name}__* in tools`);
+  // MCP tools are listed one by one (no mcp__x__* wildcard), and none that run code or read files outside the sandbox
+  const toolsLine = (head.match(/^tools: (.*)$/m) || [, ''])[1];
+  for (const [, name] of mcp.matchAll(/^  - ([\w-]+):$/gm)) {
+    check(toolsLine.includes(`mcp__${name}__`) && !toolsLine.includes(`mcp__${name}__*`), `agent ${d} lists mcp__${name}__ tools explicitly`);
+  }
+  check(!/run_code_unsafe|file_upload|browser_evaluate|ai_tutor|zoneless_migration/.test(toolsLine), `agent ${d} allows no code-running, file-reading or persona MCP tools`);
 }
 // Sandbox (issue #8): the OS-level boundary behind the gate
 const sb = JSON.parse(fs.readFileSync('.claude/settings.json', 'utf8')).sandbox ?? {};

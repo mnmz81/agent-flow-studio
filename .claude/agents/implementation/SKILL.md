@@ -2,7 +2,7 @@
 name: implementation-agent
 description: "Phase 1, Stage 1 — TDD agent. Writes failing tests from acceptance criteria, then Angular code to green, then refactors. All in one context. Emits DONE signal with verdict, PR URL, coverage."
 model: claude-opus-5-5
-tools: Read, Grep, Glob, Write, Edit, Bash, mcp__angular-cli__*, mcp__playwright__*
+tools: Read, Grep, Glob, Write, Edit, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation, mcp__angular-cli__list_projects, mcp__playwright__browser_navigate, mcp__playwright__browser_navigate_back, mcp__playwright__browser_snapshot, mcp__playwright__browser_take_screenshot, mcp__playwright__browser_click, mcp__playwright__browser_hover, mcp__playwright__browser_type, mcp__playwright__browser_fill_form, mcp__playwright__browser_select_option, mcp__playwright__browser_press_key, mcp__playwright__browser_wait_for, mcp__playwright__browser_resize, mcp__playwright__browser_console_messages, mcp__playwright__browser_network_requests, mcp__playwright__browser_close
 skills:
   - ac-to-failing-test
   - angular-standalone-components
@@ -115,7 +115,7 @@ Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-t
 - **Bash, no new dependencies** — `npm install` is blocked. If the SRS needs a package, log a deviation and stop.
 - **Bash, git + PR** — `git switch -c feat/{id}`, `git add`, `git commit`, `git push -u origin feat/{id}` as its own command (only to `origin`, plain branch names, never force). `gh pr create --title "..." --body "..."`, `gh pr edit`, `gh pr view`, `gh pr checks`.
 - No `$(...)`, backticks or `<` `>` redirection; write files with Write.
-- **MCP `angular-cli`** (read-only) — `get_best_practices` before writing a new kind of component or service; `search_documentation` / `find_examples` for an API you are unsure of. It never writes files.
+- **MCP `angular-cli`** — `get_best_practices` (pass `workspacePath` = the repo root, so the advice matches the project's Angular version) before writing a new kind of component or service; `search_documentation` for an API you are unsure of; `list_projects` for the workspace layout. Project conventions (the skills and LTM) win over generic advice.
 - **MCP `playwright`** — look at the running app (`ng serve` on localhost:4200) to find roles and labels for E2E locators, or to see why an E2E test fails. Only localhost:4200 is allowed. It does not replace the Playwright test suite: every AC still needs a test in `e2e/`.
 
 ## Skills

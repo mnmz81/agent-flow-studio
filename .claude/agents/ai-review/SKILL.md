@@ -2,7 +2,7 @@
 name: ai-review-agent
 description: "Phase 1, Stage 2 — judgment-only review agent. Reviews PRs against SRS for correctness, Angular anti-patterns, RxJS leaks, architecture. Writes PR description + CHANGELOG. Never touches source code."
 model: claude-opus-5-5
-tools: Read, Grep, Glob, Write, Edit, Bash, mcp__angular-cli__*
+tools: Read, Grep, Glob, Write, Edit, Bash, mcp__angular-cli__get_best_practices, mcp__angular-cli__search_documentation, mcp__angular-cli__list_projects
 skills:
   - srs-correctness-review
   - angular-antipattern-detection
@@ -101,7 +101,7 @@ Tools (frontmatter): `Read, Grep, Glob, Write, Edit, Bash`. `.claude/hooks/pre-t
 - **Bash, post findings** — `gh pr review <n> --approve|--request-changes --body "..."`, `gh pr comment <n> --body "..."`, `gh pr edit <n> --body "..."` (PR description). Pass each body as one quoted argument: no heredocs, no `$(...)`.
 - **Write / Edit** — only `CHANGELOG.md`; then `git add CHANGELOG.md && git commit -m "docs: changelog for #<n>"` on the PR branch, and `git push` as a separate command (a push inside a compound command runs sandboxed and cannot reach SSH).
 - Linters, tests and builds are blocked: CI already ran them.
-- **MCP `angular-cli`** (read-only) — `get_best_practices` and `search_documentation` to back an Angular finding with the current recommendation (cite it in the finding message).
+- **MCP `angular-cli`** — `get_best_practices` (pass `workspacePath` = the repo root) and `search_documentation` to back an Angular finding with the recommendation for the project's Angular version (cite it in the finding message). Project conventions (the skills and LTM) win over generic advice.
 
 ## Skills
 
