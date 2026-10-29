@@ -29,6 +29,17 @@ Feature Brief → SRS Agent → [Auto QA] → [Human Approval] → Implementatio
 2. Review agent definitions in `.claude/agents/`
 3. Start a feature by providing a feature brief — the Orchestrator (CLAUDE.md) routes it through the pipeline
 
-## Current State
+## What's built
 
-Harness in place: each agent pins a Claude model, its tools and its preloaded skills (25 agent skills + 4 Orchestrator skills in `.claude/skills/`); hooks inject per-agent LTM slices and enforce write scopes, Bash allowlists and the go/no-go gate, and validate every agent's completion signal on SubagentStop (`scripts/test-hooks.sh`). Bash runs in an OS sandbox that protects the harness; agents get pinned, per-agent MCP servers. No Angular project code yet — awaiting first feature brief.
+The orchestration harness is complete and tested:
+
+- **4 specialized agents** (SRS, Implementation, AI Review, DevOps), each pinning its own Claude model, tools, MCP servers and preloaded skills
+- **29 skills**: 25 agent skills (Angular, RxJS/Signals, testing, accessibility, review, rollout) + 4 Orchestrator skills
+- **Deterministic enforcement with hooks**: per-agent write scopes, Bash allowlists, the human go/no-go gate, and validation of every agent's completion signal on `SubagentStop`
+- **Memory**: per-agent slices of long-term memory injected at session start, plus a working-memory control plane, both git-versioned
+- **Safety**: Bash runs in an OS sandbox that protects the harness itself (no env-prefixed pushes, credential files denied)
+- **Tests**: `scripts/test-hooks.sh` feeds sample payloads to every hook and checks the outcome
+
+## Status
+
+The harness is ready. The next milestone is running the first feature brief end to end through the pipeline and feeding its retrospective into the learning loop. No application code is generated until then.
